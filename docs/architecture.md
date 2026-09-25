@@ -38,7 +38,94 @@ This section will describe the durable relational source-of-truth responsibiliti
 This section will describe the interface layer for external and internal API interactions, including request routing, validation, service responsibilities, and documentation expectations.
 
 ## ML Architecture
-This section will describe the ML pipeline, feature engineering, model serving, training/evaluation workflow, and monitoring boundaries.
+The ML architecture will separate online inference from offline training and keep the model lifecycle explicit.
+
+### ML Inference Service — Python
+Responsibilities:
+- consume validated telemetry from the processing pipeline
+- maintain and build rolling feature windows from recent telemetry
+- run anomaly detection
+- run supervised failure prediction
+- output anomaly score or anomaly status, failure probability, model name/version, and prediction timestamp
+- persist prediction results to PostgreSQL
+- update latest risk and prediction state in Redis
+- emit risk signals used for alert generation
+
+MVP inference flow:
+Validated telemetry → feature window → anomaly model + failure prediction model → prediction result → PostgreSQL + Redis → alert evaluation / API
+
+Model usage:
+- inference uses pre-trained, versioned model artifacts
+- model training happens separately in the offline ML Training Pipeline
+- the inference service must never train models during normal request or event processing
+
+Execution model:
+- inference should be asynchronous and event-driven rather than triggered directly by frontend requests
+- the frontend and API read previously computed prediction results
+
+Boundary:
+- ML Inference owns online prediction
+- ML Training owns training, evaluation, and model creation
+- Alert logic consumes prediction and risk outputs but remains conceptually separate from the ML models themselves
+
+### ML Problem Contract
+Primary supervised prediction target:
+"Will this currently operating device enter the FAILED state within the next 30 minutes of simulated time?"
+
+Observation window:
+- previous 5 minutes of telemetry
+
+Prediction window:
+- next 30 minutes of simulated time
+
+These are separate concepts:
+- observation window = data used to construct features
+- prediction window = future period in which failure is predicted
+
+Label generation:
+- the simulator owns ground-truth failure events
+- label = 1 if the device enters FAILED within the next 30 simulated minutes
+- label = 0 otherwise
+- the model must never define the ground-truth failure state
+
+Model candidates:
+- Logistic Regression as the baseline
+- Random Forest
+- XGBoost
+
+The MVP will compare these candidates and select a model based on measured validation performance rather than choosing one in advance.
+
+Anomaly detection:
+- use Isolation Forest as a separate parallel detection system
+- anomaly detection is part of the MVP
+- its output may support alert generation and investigation
+- anomaly score should not replace the supervised failure prediction
+- anomaly detection and failure prediction should produce separate signals
+
+Primary evaluation metrics:
+- precision
+- recall
+- F1
+- PR-AUC
+- false-positive rate
+
+Secondary evaluation metrics:
+- ROC-AUC
+- inference latency
+
+Because failure events may be relatively rare, PR-AUC, recall, precision, and false-positive rate should receive particular attention.
+
+Secondary prediction horizons:
+- 10 minutes
+- 60 minutes
+
+These are comparison and experimentation horizons only. The 30-minute horizon remains the primary MVP requirement unless explicitly changed later.
+
+The 5-minute observation window and 30-minute prediction window are design requirements, not measured outcomes.
+
+This ML contract will drive simulator label generation, feature engineering, training, model evaluation, online inference, and alert-related risk signals.
+
+This separation will be reflected in the future Phase 2 architecture and data-flow documentation.
 
 ## Frontend Architecture
 This section will describe the dashboard and user interaction model, role-based views, integrations with backend APIs, and web application architecture.

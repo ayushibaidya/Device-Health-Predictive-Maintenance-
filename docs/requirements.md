@@ -11,18 +11,28 @@ Modern device fleets can fail in ways that are difficult to detect before they c
 The system is intended to support simulated embedded-device telemetry at scale while demonstrating engineering practices relevant to distributed systems, backend services, machine learning, observability, and cloud deployment.
 
 ## 3. Project Goals
-The project aims to:
-- provide real-time monitoring and predictive failure detection for a simulated fleet of embedded devices
-- ingest telemetry from simulated devices in near-real time through Kafka-based ingestion
-- maintain current device state and historical telemetry persistence for operational review
-- support ML-based anomaly detection and ML-based failure prediction
-- generate alerts and support basic acknowledgement workflows for degraded or failing devices
-- provide device-level and fleet-level operational views through a FastAPI backend and Next.js dashboard
-- create a platform that demonstrates broad software engineering capability across distributed systems, backend engineering, ML, and observability
-- establish a reusable foundation for future architecture and implementation work
+The project aims to provide real-time device-health monitoring and predictive failure detection for a simulated fleet of embedded devices.
+
+The MVP includes:
+- simulated fleet of embedded devices
+- real-time telemetry generation
+- Kafka-based telemetry ingestion
+- historical telemetry persistence
+- current device-state tracking
+- ML-based anomaly detection
+- ML-based failure prediction
+- FastAPI backend
+- Next.js / React dashboard
+- basic alert generation
+- basic alert acknowledgement
+- device-level historical telemetry views
+- fleet-level health monitoring
 
 The initial release product statement is:
 "The initial release provides real-time device-health monitoring and predictive failure detection for a simulated fleet of embedded devices. The system ingests telemetry, stores historical and current state, performs ML-based anomaly detection and failure prediction, generates alerts, and exposes the results through a web dashboard."
+
+MVP success condition:
+The system shall be able to intentionally degrade a simulated device, ingest its telemetry, detect abnormal behavior, estimate a high probability of upcoming failure, generate an alert, and display the relevant evidence through the product dashboard.
 
 ## 4. Non-Goals
 The following are explicitly not part of the MVP scope:
@@ -35,6 +45,10 @@ The following are explicitly not part of the MVP scope:
 - ticket assignment or escalation workflows
 - Power BI as a required product component
 - advanced BI or reporting workflows
+
+Firmware regression analysis shall be treated as a high-priority post-MVP feature.
+
+The following are not part of the current SDLC phase and remain deferred until later phases:
 - final service boundary design
 - final data model implementation
 - implementation of backend services or APIs
@@ -45,25 +59,24 @@ The following are explicitly not part of the MVP scope:
 - production benchmark claims
 - final production architecture selection
 
-Firmware regression analysis shall be treated as a high-priority post-MVP feature.
-
 ## 5. Target Users
 Primary user: Reliability / Maintenance Engineer
 - monitor device health
-- identify unhealthy or degrading devices
+- inspect unhealthy or degrading devices
 - investigate anomalies
 - inspect failure predictions
-- understand why a device was flagged
-- inspect telemetry history
+- review recent and historical telemetry
 - review alert history
-- determine which devices require intervention
+- determine whether intervention is needed
+- acknowledge alerts
 
 Secondary user: Fleet / Operations Engineer
-- understand fleet-wide health
-- monitor counts of healthy, warning, critical, and failed devices
+- monitor overall fleet status
+- track healthy, warning, critical, and failed device counts
 - monitor active alerts
-- identify clusters of degraded devices
-- inspect fleet-wide trends and recent failures
+- identify degraded device clusters
+- inspect recent failures
+- identify devices requiring further investigation
 
 Future user: ML / Data Engineer
 - inspect active model versions
@@ -74,7 +87,9 @@ Future user: ML / Data Engineer
 - monitor drift
 - analyze false positives and false negatives
 
-The MVP dashboard shall be designed primarily for the Reliability / Maintenance Engineer persona. The ML / Data Engineer persona is not a primary MVP UI target and shall be classified as a later MLOps/admin capability.
+The dashboard shall support both primary and secondary users, but it shall be designed primarily for reliability investigation. The fleet overview shall provide high-level operational status, while device detail views shall provide deeper telemetry, anomaly, prediction, and alert information.
+
+The ML / Data Engineer persona is not part of the MVP user experience and shall be classified as a future MLOps/admin capability.
 
 The following are explicitly excluded as primary MVP personas:
 - plant managers
@@ -85,12 +100,26 @@ The following are explicitly excluded as primary MVP personas:
 Platform engineers may operate infrastructure, but they are not the main product persona.
 
 ## 6. Core User Stories
-- As a Reliability / Maintenance Engineer, I want to view current device health and status so that I can identify degrading or unhealthy equipment quickly.
-- As a Reliability / Maintenance Engineer, I want to inspect telemetry history and alert history so that I can understand why a device was flagged and decide whether intervention is needed.
-- As a Fleet / Operations Engineer, I want to see fleet-wide health so that I can identify clusters of degraded devices and active alerts.
-- As a Fleet / Operations Engineer, I want to monitor healthy, warning, critical, and failed counts so that I can prioritize operational attention.
+- As a Reliability / Maintenance Engineer, I want to view current fleet health and active alerts so that I can identify high-risk or unhealthy devices quickly.
+- As a Reliability / Maintenance Engineer, I want to inspect device-level telemetry and predictions so that I can understand why a device was flagged and decide whether intervention is needed.
+- As a Reliability / Maintenance Engineer, I want to acknowledge alerts so that I can track operational response and investigation status.
+- As a Fleet / Operations Engineer, I want to see fleet-wide health and counts of healthy, warning, critical, and failed devices so that I can prioritize operational attention.
+- As a Fleet / Operations Engineer, I want to identify degraded device clusters and recent failures so that I can focus investigation on areas of concern.
 - As a future ML / Data Engineer, I want to inspect model versions and prediction behavior so that I can evaluate model quality and track drift.
 - As a software engineer, I want a well-documented portfolio project so that architecture, testing, and engineering tradeoffs are clearly evident.
+
+Primary MVP user journey:
+1. Open fleet dashboard.
+2. Review fleet health and active alerts.
+3. Select an unhealthy or high-risk device.
+4. Inspect current device health.
+5. Review recent and historical telemetry.
+6. Inspect anomaly indicators and failure probability.
+7. Review current and previous alerts.
+8. Decide whether intervention is required.
+9. Acknowledge the alert.
+
+This user journey shall guide the MVP dashboard, API boundaries, and product interaction model.
 
 ## 7. Functional Requirements
 FR-001: The system shall support ingestion of device telemetry from simulated embedded devices.
