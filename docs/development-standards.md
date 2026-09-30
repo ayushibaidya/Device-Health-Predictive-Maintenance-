@@ -23,8 +23,12 @@ use those same pins.
 | Local C++ compiler | Apple Clang provided by the stable Xcode Command Line Tools |
 | Reference/CI C++ compiler | GCC 16.2 on Linux |
 | Build system | CMake 4.4.3 |
-| Kafka client | `librdkafka` 2.16.0 |
+| Kafka client | `librdkafka` 2.15.1 |
 | Kafka broker | Apache Kafka 4.3.1, official Docker image, KRaft mode; ZooKeeper is not used |
+
+`librdkafka` 2.15.1 is pinned because it is the latest confirmed official tagged
+release available for reproducible installation. Upgrade to 2.16.0 only after an
+official `v2.16.0` release/tag is published and verified.
 
 Local builds target `arm64`. Docker images and services must support Apple
 Silicon where available. The same C++ project must compile with both the local

@@ -14,7 +14,7 @@ be pinned as described in [docs/development-standards.md](docs/development-stand
 - Device / Edge: C++20, Apple Clang (stable Xcode Command Line Tools) locally, GCC 16.2 in Linux CI
 - Build system: CMake 4.4.3
 - Streaming: Apache Kafka 4.3.1, official Docker image, KRaft mode (no ZooKeeper)
-- Kafka client: librdkafka 2.16.0
+- Kafka client: librdkafka 2.15.1; upgrade to 2.16.0 after its official release/tag is published and verified
 - Caching / low-latency state: Redis (version to be pinned before implementation)
 - Relational storage: PostgreSQL (version to be pinned before implementation)
 - Backend: Python, FastAPI, Pydantic, SQLAlchemy, Alembic (versions to be pinned before implementation)
@@ -24,16 +24,6 @@ be pinned as described in [docs/development-standards.md](docs/development-stand
 - Cloud: AWS
 - Observability: Prometheus, Grafana, CloudWatch
 - CI/CD: GitHub Actions; Linux/GCC 16.2 build required for C++ portability
-- Streaming: Apache Kafka
-- Caching / low-latency state: Redis
-- Relational storage: PostgreSQL
-- Backend: Python, FastAPI, Pydantic, SQLAlchemy, Alembic
-- Frontend: Next.js, React, TypeScript, Tailwind CSS
-- Machine learning: Python, NumPy, Pandas, scikit-learn, optional XGBoost
-- Infrastructure: Docker, Docker Compose, Kubernetes, Terraform
-- Cloud: AWS
-- Observability: Prometheus, Grafana, CloudWatch
-- CI/CD: GitHub Actions
 
 ## Documentation
 - [docs/requirements.md](docs/requirements.md)
