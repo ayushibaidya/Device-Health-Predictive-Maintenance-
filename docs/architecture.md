@@ -10,6 +10,41 @@ The MVP provides fleet health monitoring and predictive maintenance for a simula
 
 The architecture prioritizes reproducible local development, durable history, clear ownership boundaries, traceable asynchronous processing, and a path to later cloud deployment. It does not require cloud infrastructure, production-scale guarantees, or independently deployed microservices for the initial implementation.
 
+## Architecture Principles
+
+### SOLID alignment
+The architecture is intentionally shaped to align with SOLID principles, even before implementation begins:
+
+- Single Responsibility: each logical component has one dominant responsibility (simulator, Kafka transport, telemetry processing, inference, alerting, API, frontend).
+- Open/Closed: major contracts are defined around stable interfaces so future model or transport changes do not force broad structural rewrites.
+- Liskov Substitution: service adapters and interfaces should be designed around stable contracts instead of hidden assumptions about concrete implementations.
+- Interface Segregation: backend and frontend consume a narrow, purpose-fit API surface rather than a monolithic shared interface.
+- Dependency Inversion: the application relies on abstractions for data access, model artifact selection, and event transport rather than hard-coding concrete implementations in core workflows.
+
+These principles are being used as design constraints for Phase 3 and beyond, and they are explicitly reflected in the component separation and data ownership rules in this document.
+
+### Scalability by design
+The selected architecture is intentionally organized to scale with future growth:
+
+- Kafka decouples producers and consumers so the telemetry pipeline can absorb higher event volume without forcing synchronous coupling.
+- PostgreSQL is the durable system-of-record for history and metadata, allowing future index tuning, partitioning, and retention controls without changing the core product model.
+- Redis is reserved for derived live state and cached operational views, keeping hot-path reads separate from durable history.
+- Inference and alert evaluation are structured as distinct logical components so future scale-out decisions remain possible without redesigning the whole architecture.
+- Data ownership is explicit, reducing dual-write or inconsistent-state risks as the fleet size grows.
+
+The current implementation is local-first, but the architecture is designed for later horizontal scaling, additional device fleets, and higher telemetry throughput.
+
+### Security by design
+Security is planned from the start, even before the code layer exists:
+
+- Authentication and authorization will be designed at the API boundary before production deployment.
+- Secrets and credentials will not be embedded in source-controlled configuration.
+- Transport security will be required for any deployment beyond local development.
+- Data at rest and in transit will be planned with encryption requirements from the start.
+- Operational services will treat telemetry, model outputs, and alert data as sensitive operational data and avoid exposing raw internal state beyond the required API surface.
+
+A dedicated security and data-protection design is expected to follow this Phase 3 baseline before broader deployment.
+
 ## High-Level Architecture
 
 ```mermaid
@@ -82,6 +117,10 @@ Exact PostgreSQL schema/indexes, Redis keys/TTLs/invalidation and rebuild detail
 ## Telemetry Contract
 
 The previously agreed MVP telemetry factors remain the contract; this architecture does not redefine them. Required fields are `device_id`, `timestamp`, `firmware_version`, `temperature`, `power_draw`, `cpu_utilization`, `memory_utilization`, `timing_jitter`, `error_count`, and `device_state`. `actuator_load` and `position_error` are conditionally required for devices with actuator behavior. `battery_voltage`, `battery_current`, sensor-specific readings, `fault_code`, and additional device-specific metrics are optional.
+
+For the detailed Phase 3 event and database schema draft, see [docs/telemetry-schema.md](telemetry-schema.md). This file remains intentionally high-level; the schema document captures the event contract and the initial durable table layout for the MVP.
+
+Additional Phase 3 design references: [docs/security-scalability.md](security-scalability.md).
 
 The default MVP interval is one event per device every 5 simulated seconds. Normal events include required fields unless unavailable or invalid. Event timestamps represent UTC event time serialized as ISO 8601, are monotonically non-decreasing per device, and remain internally consistent when simulation runs faster than wall-clock time. Ingestion time may be recorded separately.
 
