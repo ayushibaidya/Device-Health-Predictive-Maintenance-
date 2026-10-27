@@ -4,11 +4,29 @@
 The Device Health and Predictive Maintenance Platform is a distributed full-stack system for ingesting real-time telemetry from simulated embedded devices, analyzing device behavior, detecting anomalies, predicting failures using machine learning, and presenting device-health information to engineers through a web interface. The platform is intended to demonstrate broad software engineering capability across telemetry processing, distributed systems, backend services, machine learning, database design, observability, and cloud deployment.
 
 ## Project status
-Status: architecture and Phase 3 design baselines are documented; implementation
-is starting with the simulator and Kafka telemetry ingestion.
+Status: the first C++20 simulator increment is implemented, with deterministic
+degradation/recovery scenarios, JSON telemetry, automated tests, and a terminal
+demo. Kafka publishing and the remaining end-to-end pipeline are next.
 
 Before implementing each component, its toolchain and dependency versions must
 be pinned as described in [docs/development-standards.md](docs/development-standards.md).
+
+## Build, test, and demonstrate the simulator
+
+From the repository root, using CMake 4.4.3 and Apple Clang locally:
+
+```sh
+cmake --preset dev
+cmake --build --preset dev --parallel 4
+ctest --preset dev --parallel 4
+cmake --build --preset dev --target simulator_demo
+```
+
+The demo runs three devices for 100 simulated minutes without wall-clock waits,
+validates 3,603 real JSON events, and prints the observed state changes. See the
+[simulator guide](docs/simulator.md) for direct CLI commands, configuration,
+offline dependency setup, and current limitations. The first configure fetches
+the checksum-pinned nlohmann/json 3.12.0 dependency.
 
 ## Planned technology stack
 - Device / Edge: C++20, Apple Clang (stable Xcode Command Line Tools) locally, GCC 16.2 in Linux CI
@@ -33,6 +51,8 @@ be pinned as described in [docs/development-standards.md](docs/development-stand
 - [docs/development-standards.md](docs/development-standards.md)
 - [docs/adr/README.md](docs/adr/README.md)
 - [docs/testing-strategy.md](docs/testing-strategy.md)
+- [docs/simulator-design.md](docs/simulator-design.md)
+- [docs/simulator.md](docs/simulator.md)
 
 Implementation is local-first and follows the documented architecture, schema,
 security, and development standards. Cloud infrastructure and production

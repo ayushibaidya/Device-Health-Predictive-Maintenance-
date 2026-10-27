@@ -23,6 +23,7 @@ use those same pins.
 | Local C++ compiler | Apple Clang provided by the stable Xcode Command Line Tools |
 | Reference/CI C++ compiler | GCC 16.2 on Linux |
 | Build system | CMake 4.4.3 |
+| Simulator JSON encoding | nlohmann/json 3.12.0; release archive and SHA-256 pinned in `cmake/Dependencies.cmake` |
 | Kafka client | `librdkafka` 2.15.1 |
 | Kafka broker | Apache Kafka 4.3.1, official Docker image, KRaft mode; ZooKeeper is not used |
 
@@ -36,12 +37,21 @@ Apple Clang toolchain and the Linux/GCC reference toolchain. CI must include a
 Linux build using GCC 16.2; retain a local Apple Clang build as a required
 developer check, and add a macOS CI job if/when the project enables macOS runners.
 
-The CMake project must require C++20, reject compiler extensions by default, and
-consume the pinned `librdkafka` version. The local Kafka service must use the
+The CMake project must require C++20 and reject compiler extensions by default.
+The simulator-only increment consumes the pinned JSON dependency; it emits JSON
+Lines locally without requiring a broker or Kafka client. When Kafka publishing
+is introduced, the CMake project must consume the pinned `librdkafka` version.
+The local Kafka service must use the
 explicit `apache/kafka:4.3.1` image tag and configure KRaft without ZooKeeper.
 These pins must be reflected in build configuration and local-run configuration
 as those files are introduced; this table is the reviewable baseline, not a
 substitute for executable pins.
+
+The simulator build, approved behavior, CLI, tests, and demonstration are
+documented in [simulator.md](simulator.md) and [simulator-design.md](simulator-design.md).
+CTest is supplied by the pinned CMake toolchain; no additional test framework is
+required. The CI bootstrap uses Python solely to install pinned CMake inside an
+ephemeral GCC container; it does not introduce a Python runtime for the simulator.
 
 Before adding Python services, pin Python and FastAPI versions; before adding the
 frontend, pin Node.js and frontend package versions; before using PostgreSQL or
@@ -91,6 +101,21 @@ approval when another maintainer is available; a solo maintainer must still use
 a pull request and passing checks rather than self-approving. Branch protection
 is a GitHub repository setting and must be enabled separately; this document
 does not enforce it by itself.
+
+### Phase-based implementation commits
+
+Keep Git checkpoints aligned with approved implementation increments. Commit
+each completed increment separately, including its code, focused tests,
+build/CI configuration, and related documentation. Use a component scope in the
+Conventional Commit message, and keep subsequent increments out of that commit.
+The simulator is the first implementation increment; Kafka publishing is the
+next. A local commit is a checkpoint, not a substitute for the pull request,
+remote CI checks, and merge required by the Definition of Done.
+
+Confirm unresolved software design decisions with the user before implementing
+them. Continue within an already approved design without asking for the same
+approval again. Preserve approved decisions and verification results in the
+component documentation so later phases can resume from the saved checkpoint.
 
 ## 4. Commit messages
 

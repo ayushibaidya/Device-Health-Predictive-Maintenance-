@@ -1,8 +1,12 @@
 # Phase 3 Telemetry and Core Data Schema Draft
 
-Status: Draft for Phase 3 design
+Status: Unit-qualified telemetry event contract approved for the simulator
+increment on October 27, 2026. PostgreSQL tables remain a Phase 3 design draft.
 
 This document defines the initial schema contract for the simulator → Kafka message path and the durable PostgreSQL tables needed for the MVP. It is intentionally a design artifact and not implementation code.
+
+The current simulator emits this event contract as JSON Lines locally; Kafka and
+durable storage are subsequent increments. See [simulator-design.md](simulator-design.md).
 
 ## 1. Design principles
 
@@ -219,4 +223,6 @@ It intentionally does not decide:
 
 ## 6. Next step
 
-The next actionable step is to convert this draft into an agreed Phase 3 schema review and then begin the simulator + Kafka ingestion implementation against this contract.
+The simulator event contract is now implemented and tested. Before the Kafka and
+storage increments, review event/lifecycle identity, delivery/error handling,
+and the remaining database design against this contract.

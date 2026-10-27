@@ -1,6 +1,8 @@
 # Architecture and Design
 
-Status: Phase 2 architecture baseline complete; detailed component design is the next phase. No application implementation is included or authorized by this document.
+Status: Phase 2 architecture baseline complete. The simulator component design
+was approved on October 27, 2026 and its first implementation increment is now
+available. Remaining components continue through detailed design before build.
 
 This document records logical responsibilities and system contracts. A logical component does not have to be an independently deployed service in the MVP. Details marked TBD are deferred to detailed component design or implementation unless they become an architectural dependency.
 
@@ -116,7 +118,12 @@ Exact PostgreSQL schema/indexes, Redis keys/TTLs/invalidation and rebuild detail
 
 ## Telemetry Contract
 
-The previously agreed MVP telemetry factors remain the contract; this architecture does not redefine them. Required fields are `device_id`, `timestamp`, `firmware_version`, `temperature`, `power_draw`, `cpu_utilization`, `memory_utilization`, `timing_jitter`, `error_count`, and `device_state`. `actuator_load` and `position_error` are conditionally required for devices with actuator behavior. `battery_voltage`, `battery_current`, sensor-specific readings, `fault_code`, and additional device-specific metrics are optional.
+Required event fields use the unit-qualified schema: `device_id`, `timestamp`,
+`firmware_version`, `temperature_c`, `power_draw_w`, `cpu_utilization_pct`,
+`memory_utilization_pct`, `timing_jitter_ms`, `error_count`, and `device_state`.
+`actuator_load_pct` and `position_error_mm` apply to devices with actuator
+behavior; the initial simulator uses non-actuator devices and omits them.
+Future device-specific metrics require an explicit event-contract review.
 
 For the detailed Phase 3 event and database schema draft, see [docs/telemetry-schema.md](telemetry-schema.md). This file remains intentionally high-level; the schema document captures the event contract and the initial durable table layout for the MVP.
 
@@ -140,7 +147,11 @@ States are HEALTHY, WARNING, CRITICAL, and FAILED. Allowed transitions are:
 
 WARNING may recover to HEALTHY when the degrading condition clears and remains stable. CRITICAL may recover to WARNING when severe degradation clears before failure; it cannot recover directly to HEALTHY. FAILED is terminal for the current simulated run. Recovery from FAILED requires an explicit reset, restart, or replacement that begins a new device lifecycle/run.
 
-Only deterministic simulator conditions change ground-truth state. ML risk, anomaly scores, and predictions can affect alerts, never simulator state. Exact degradation equations, thresholds, recovery durations, and reset semantics remain TBD during detailed simulator design.
+Only deterministic simulator conditions change ground-truth state. ML risk,
+anomaly scores, and predictions can affect alerts, never simulator state. The
+initial synthetic degradation, thresholds, recovery durations, and reset
+semantics are approved in [simulator-design.md](simulator-design.md) and
+implemented as described in [simulator.md](simulator.md).
 
 ## ML Architecture and Contract
 
@@ -223,7 +234,9 @@ MVP retains telemetry, prediction, and alert history long enough to support trai
 Unless needed to resolve an architectural dependency, defer:
 
 - Exact telemetry units, valid ranges, calibration, and missing-data/imputation rules.
-- Exact simulator equations, thresholds, recovery durations, and fault-injection mechanics.
+- Physical calibration and future device-specific simulator behavior; the first
+  synthetic scenario's equations, thresholds, recovery, and fault injection are
+  now defined in simulator-design.md.
 - Exact ML feature definitions, hyperparameters, serialization, and artifact implementation.
 - Exact alert thresholds, combinations, debounce/cooldown, and reactivation rules.
 - PostgreSQL schema/indexes/partitioning; Redis keys/TTLs/invalidation; Kafka topics/partitions/retention.
@@ -240,4 +253,7 @@ The Phase 2 criteria are met at the logical architecture level: major components
 
 No material contradiction remains in the architecture baseline. The logical flow from validated telemetry to inference is intentionally not tied to a final transport; Redis is derived operational state, not durable history; simulator state and ML risk are explicitly separate; the 200 events/second and sub-second reads are targets, not benchmark claims. Detailed design must resolve the durability/replay/idempotency mechanics needed to meet restart expectations, plus the remaining security and component-level TBDs above.
 
-Phase 2 is sufficiently complete to begin detailed component design. This status does not authorize application implementation; implementation remains out of scope until explicitly approved.
+Phase 2 is sufficiently complete for detailed component design. The simulator
+increment has since received explicit design approval and is implemented. Kafka,
+storage, ML, API, and frontend design choices remain subject to confirmation
+before their implementation.
