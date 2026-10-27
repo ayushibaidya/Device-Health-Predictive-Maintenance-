@@ -14,12 +14,25 @@
         "CMAKE_BUILD_TYPE": "Debug",
         "BUILD_TESTING": "ON"
       }
+    },
+    {
+      "name": "kafka",
+      "inherits": "dev",
+      "displayName": "C++20 simulator with pinned Kafka publisher",
+      "binaryDir": "${sourceDir}/build/kafka",
+      "cacheVariables": {
+        "DEVICE_HEALTH_WITH_KAFKA": "ON"
+      }
     }
   ],
   "buildPresets": [
     {
       "name": "dev",
       "configurePreset": "dev"
+    },
+    {
+      "name": "kafka",
+      "configurePreset": "kafka"
     }
   ],
   "testPresets": [
@@ -32,6 +45,12 @@
       "execution": {
         "noTestsAction": "error"
       }
+    },
+    {
+      "name": "kafka",
+      "configurePreset": "kafka",
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error" }
     }
   ]
 }

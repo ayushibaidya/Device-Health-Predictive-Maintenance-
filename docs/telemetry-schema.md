@@ -1,12 +1,14 @@
 # Phase 3 Telemetry and Core Data Schema Draft
 
-Status: Unit-qualified telemetry event contract approved for the simulator
-increment on October 27, 2026. PostgreSQL tables remain a Phase 3 design draft.
+Status: Kafka identity fields and the narrow PostgreSQL ingestion inbox were
+approved October 27, 2026 and are implemented. Broader historical PostgreSQL
+tables remain a design draft.
 
 This document defines the initial schema contract for the simulator → Kafka message path and the durable PostgreSQL tables needed for the MVP. It is intentionally a design artifact and not implementation code.
 
-The current simulator emits this event contract as JSON Lines locally; Kafka and
-durable storage are subsequent increments. See [simulator-design.md](simulator-design.md).
+Kafka mode emits the full ingestion contract below. The legacy stdout simulator
+emits metric samples without transport identities. See
+[kafka-ingestion.md](kafka-ingestion.md) for acknowledgement and replay behavior.
 
 ## 1. Design principles
 
@@ -23,6 +25,8 @@ The simulator publishes one telemetry event per device sample. This is the canon
 
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
+| event_id | UUID string | Yes | Globally unique sample identity, retained during retries/replay |
+| run_id | UUID string | Yes | Current device lifecycle; changes on explicit reset |
 | device_id | string | Yes | Stable device identifier |
 | timestamp | datetime ISO 8601 UTC | Yes | Event time, not ingestion time |
 | firmware_version | string | Yes | Current firmware version |
@@ -39,6 +43,7 @@ The simulator publishes one telemetry event per device sample. This is the canon
 ### Validation rules
 
 - `device_id` must be non-empty.
+- `event_id` and `run_id` are canonical nonzero UUIDs; the Kafka key equals `device_id`.
 - `timestamp` must be valid ISO 8601 UTC.
 - `device_state` must be one of `HEALTHY`, `WARNING`, `CRITICAL`, `FAILED`.
 - Required numeric fields must be present and must not be null.
@@ -50,6 +55,8 @@ The simulator publishes one telemetry event per device sample. This is the canon
 
 ```json
 {
+  "event_id": "11111111-1111-4111-8111-111111111111",
+  "run_id": "22222222-2222-4222-8222-222222222222",
   "device_id": "device-042",
   "timestamp": "2026-09-29T18:30:00Z",
   "firmware_version": "1.0.0",
@@ -66,6 +73,12 @@ The simulator publishes one telemetry event per device sample. This is the canon
 ```
 
 ## 3. PostgreSQL schema draft
+
+The implemented `telemetry_inbox` is defined in
+[001_telemetry_inbox.sql](../processing/migrations/001_telemetry_inbox.sql). It
+stores unique event identity, lifecycle/device identity, event time, validated
+JSON, Kafka coordinates, and persistence time. It provides durable deduplication
+before offset commits; the broader historical tables below are still drafts.
 
 ### 3.0 Schema decision summary
 
@@ -223,6 +236,5 @@ It intentionally does not decide:
 
 ## 6. Next step
 
-The simulator event contract is now implemented and tested. Before the Kafka and
-storage increments, review event/lifecycle identity, delivery/error handling,
-and the remaining database design against this contract.
+Kafka ingestion and its narrow durable inbox are implemented. The next storage
+increment adds queryable telemetry and latest-state views against this contract.

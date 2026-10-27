@@ -12,6 +12,12 @@ CLI, recovery, and repeatability checks. Its commands and demo are documented in
 [simulator.md](simulator.md); the broader strategy below applies as additional
 components are introduced. Run `ctest --preset dev` after building.
 
+Kafka ingestion adds producer identity/failure tests, Python validation and
+acknowledgement-boundary checks, and real Kafka/PostgreSQL integration tests.
+`bash scripts/test-kafka.sh` checks restart deduplication, the database-before-
+offset crash window, DLQ delivery, database recovery, and broker interruption.
+The Kafka ingestion GitHub Actions workflow runs the same script.
+
 ## Unit Testing
 Unit tests will validate the correctness of individual logic components, calculations, feature transformations, model utility functions, and validation logic.
 

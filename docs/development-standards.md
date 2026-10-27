@@ -27,9 +27,9 @@ use those same pins.
 | Kafka client | `librdkafka` 2.15.1 |
 | Kafka broker | Apache Kafka 4.3.1, official Docker image, KRaft mode; ZooKeeper is not used |
 
-`librdkafka` 2.15.1 is pinned because it is the latest confirmed official tagged
-release available for reproducible installation. Upgrade to 2.16.0 only after an
-official `v2.16.0` release/tag is published and verified.
+`librdkafka` 2.15.1 remains the explicitly approved ingestion baseline. Dependency
+upgrades are separate reviewed changes, rather than implicit updates to whichever
+release is newest.
 
 Local builds target `arm64`. Docker images and services must support Apple
 Silicon where available. The same C++ project must compile with both the local
@@ -50,10 +50,17 @@ substitute for executable pins.
 The simulator build, approved behavior, CLI, tests, and demonstration are
 documented in [simulator.md](simulator.md) and [simulator-design.md](simulator-design.md).
 CTest is supplied by the pinned CMake toolchain; no additional test framework is
-required. The CI bootstrap uses Python solely to install pinned CMake inside an
+required. The C++ CI bootstrap uses Python solely to install pinned CMake inside an
 ephemeral GCC container; it does not introduce a Python runtime for the simulator.
 
-Before adding Python services, pin Python and FastAPI versions; before adding the
+The consumer pins Python 3.13.18, confluent-kafka 2.15.1, and
+psycopg/psycopg-binary 3.3.6. PostgreSQL 18.6 implements only the ingestion inbox.
+Runtime/dev lockfiles pin transitive dependencies and hashes; image tags and
+digests pin execution environments. Docker Engine 27+ and Compose 2.24+ are the
+supported baseline, tested locally with 29.2.1 and 5.0.2 respectively. See
+[kafka-ingestion.md](kafka-ingestion.md) for the contract and verification.
+
+Before adding API services, pin FastAPI and related versions; before adding the
 frontend, pin Node.js and frontend package versions; before using PostgreSQL or
 Redis, pin their engine versions. Pin Docker/Compose versions or document the
 supported range for local orchestration. Optional and future technologies are
@@ -108,14 +115,20 @@ Keep Git checkpoints aligned with approved implementation increments. Commit
 each completed increment separately, including its code, focused tests,
 build/CI configuration, and related documentation. Use a component scope in the
 Conventional Commit message, and keep subsequent increments out of that commit.
-The simulator is the first implementation increment; Kafka publishing is the
-next. A local commit is a checkpoint, not a substitute for the pull request,
+The simulator and Kafka ingestion are the first implementation increments.
+A local commit is a checkpoint, not a substitute for the pull request,
 remote CI checks, and merge required by the Definition of Done.
 
 Confirm unresolved software design decisions with the user before implementing
 them. Continue within an already approved design without asking for the same
 approval again. Preserve approved decisions and verification results in the
 component documentation so later phases can resume from the saved checkpoint.
+
+The priority is a credible hosted MVP. Keep the existing SDLC documents, feature
+branches, focused commits, and relevant tests while making every increment
+advance ingestion, persistence/current state, API, dashboard/alerts, ML, and
+hosting. Keep design records concise and confirm material decisions without
+delaying routine implementation.
 
 ## 4. Commit messages
 

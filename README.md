@@ -4,12 +4,40 @@
 The Device Health and Predictive Maintenance Platform is a distributed full-stack system for ingesting real-time telemetry from simulated embedded devices, analyzing device behavior, detecting anomalies, predicting failures using machine learning, and presenting device-health information to engineers through a web interface. The platform is intended to demonstrate broad software engineering capability across telemetry processing, distributed systems, backend services, machine learning, database design, observability, and cloud deployment.
 
 ## Project status
-Status: the first C++20 simulator increment is implemented, with deterministic
-degradation/recovery scenarios, JSON telemetry, automated tests, and a terminal
-demo. Kafka publishing and the remaining end-to-end pipeline are next.
+Status: the C++ simulator and Kafka ingestion path are implemented. Events flow
+through Kafka, Python validation, and a durable PostgreSQL inbox with replay
+deduplication. Upcoming increments add current state, APIs, dashboard/alerts, ML,
+and a public hosted demo.
 
 Before implementing each component, its toolchain and dependency versions must
 be pinned as described in [docs/development-standards.md](docs/development-standards.md).
+
+## Run the ingestion demo
+
+With Docker running:
+
+```sh
+bash scripts/demo-kafka.sh
+```
+
+This runs **C++ simulator -> Kafka -> Python validation -> PostgreSQL** and
+verifies the published events were persisted. See the
+[Kafka ingestion guide](docs/kafka-ingestion.md) for inspection, replay, tests,
+and shutdown. Run `bash scripts/test-kafka.sh` for the isolated automated check.
+
+The delivery goal is a public demo with fleet/device views, alert acknowledgement,
+and genuine ML predictions. Each increment gets a focused feature branch, tests,
+commit, and pull request:
+
+| Increment | Outcome |
+| --- | --- |
+| Simulator | Completed and merged |
+| Kafka ingestion | Implemented, including the approved ingestion inbox |
+| Persistence/current state | Telemetry queries and Redis latest state |
+| Basic API | Fleet, device, history, and alert endpoints |
+| Dashboard | Fleet/device views and alert acknowledgement |
+| ML baseline | Failure probability and anomaly signal visible in the UI |
+| Hosted release | Public URL, health checks, and automatically seeded demo data |
 
 ## Build, test, and demonstrate the simulator
 
@@ -32,10 +60,10 @@ the checksum-pinned nlohmann/json 3.12.0 dependency.
 - Device / Edge: C++20, Apple Clang (stable Xcode Command Line Tools) locally, GCC 16.2 in Linux CI
 - Build system: CMake 4.4.3
 - Streaming: Apache Kafka 4.3.1, official Docker image, KRaft mode (no ZooKeeper)
-- Kafka client: librdkafka 2.15.1; upgrade to 2.16.0 after its official release/tag is published and verified
+- Kafka client: librdkafka 2.15.1, the approved ingestion baseline
 - Caching / low-latency state: Redis (version to be pinned before implementation)
-- Relational storage: PostgreSQL (version to be pinned before implementation)
-- Backend: Python, FastAPI, Pydantic, SQLAlchemy, Alembic (versions to be pinned before implementation)
+- Relational storage: PostgreSQL 18.6 (ingestion inbox implemented)
+- Backend: Python 3.13.18; FastAPI, Pydantic, SQLAlchemy, and Alembic versions pinned when adopted
 - Frontend: Next.js, React, TypeScript, Tailwind CSS (versions to be pinned before implementation)
 - Machine learning: Python, NumPy, Pandas, scikit-learn, optional XGBoost
 - Infrastructure: Docker, Docker Compose, Kubernetes, Terraform
@@ -53,7 +81,9 @@ the checksum-pinned nlohmann/json 3.12.0 dependency.
 - [docs/testing-strategy.md](docs/testing-strategy.md)
 - [docs/simulator-design.md](docs/simulator-design.md)
 - [docs/simulator.md](docs/simulator.md)
+- [docs/kafka-ingestion.md](docs/kafka-ingestion.md)
 
 Implementation is local-first and follows the documented architecture, schema,
 security, and development standards. Cloud infrastructure and production
-deployment remain out of scope for the initial implementation phase.
+deployment are planned for the hosted-release increment after the tested
+recruiter-facing product workflow is working.

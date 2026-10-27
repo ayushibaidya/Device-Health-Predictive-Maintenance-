@@ -2,7 +2,8 @@
 
 Status: Phase 2 architecture baseline complete. The simulator component design
 was approved on October 27, 2026 and its first implementation increment is now
-available. Remaining components continue through detailed design before build.
+available. Kafka ingestion and its approved PostgreSQL inbox are also implemented;
+the remaining increments follow the hosted-MVP path in the README.
 
 This document records logical responsibilities and system contracts. A logical component does not have to be an independently deployed service in the MVP. Details marked TBD are deferred to detailed component design or implementation unless they become an architectural dependency.
 
@@ -92,7 +93,11 @@ Diagram shows logical flows, not mandated process or deployment boundaries. Inte
 5. Alert Evaluation considers simulator-confirmed state changes and ML risk signals, then persists alert state in PostgreSQL.
 6. FastAPI composes current views from Redis and historical views from PostgreSQL. The frontend reads precomputed predictions; a user request never synchronously triggers inference.
 
-Preserve identifiers sufficient to trace device → telemetry event → processed telemetry → prediction → alert. Exact event schemas, topic names, idempotency strategy, and transaction/offset coordination remain TBD during detailed component design.
+Kafka events now use approved event/run/device identities, topics, and message
+key. The consumer persists or identifies an existing inbox event before
+committing its source offset; invalid records require DLQ acknowledgement first.
+See [kafka-ingestion.md](kafka-ingestion.md). Broader prediction/alert traceability
+is added with those components.
 
 ## Data Ownership and Storage
 
@@ -118,7 +123,7 @@ Exact PostgreSQL schema/indexes, Redis keys/TTLs/invalidation and rebuild detail
 
 ## Telemetry Contract
 
-Required event fields use the unit-qualified schema: `device_id`, `timestamp`,
+Required Kafka event fields use the unit-qualified schema: `event_id`, `run_id`, `device_id`, `timestamp`,
 `firmware_version`, `temperature_c`, `power_draw_w`, `cpu_utilization_pct`,
 `memory_utilization_pct`, `timing_jitter_ms`, `error_count`, and `device_state`.
 `actuator_load_pct` and `position_error_mm` apply to devices with actuator
@@ -223,7 +228,11 @@ Design targets, not measured benchmarks:
 - Inference should keep pace without sustained backlog; telemetry processing should keep pace with the MVP target volume.
 - Restart/loss of API, inference, telemetry consumer, or Redis must not corrupt durable history. Redis loss may temporarily reduce current-state performance but must not destroy durable information.
 
-Exact API SLA, maximum throughput, tested fleet size, benchmark method, resource sizing, backpressure limits, and recovery-time objectives remain TBD and must be validated rather than presented as measured outcomes. Kafka durability/replay, database transaction/offset coordination, idempotency, and Redis reconstruction details require component design so the restart expectations are implementable.
+Exact API SLA, maximum throughput, tested fleet size, benchmark method, resource
+sizing, and recovery objectives remain targets requiring measurement. The initial
+ingestion transaction/offset and replay behavior is implemented and tested in
+kafka-ingestion.md; Redis reconstruction and broader recovery follow with the
+next components.
 
 ## Retention and Data Lifecycle
 
@@ -251,9 +260,13 @@ These details are TBD during detailed component design / implementation, not imp
 
 The Phase 2 criteria are met at the logical architecture level: major components and responsibilities, telemetry path, data ownership, sync/async communication, simulator ground truth and recovery, training/inference boundary, alert ownership, dashboard/API scope, local-first deployment direction, observability, scale targets, retention direction, and deferred details are documented.
 
-No material contradiction remains in the architecture baseline. The logical flow from validated telemetry to inference is intentionally not tied to a final transport; Redis is derived operational state, not durable history; simulator state and ML risk are explicitly separate; the 200 events/second and sub-second reads are targets, not benchmark claims. Detailed design must resolve the durability/replay/idempotency mechanics needed to meet restart expectations, plus the remaining security and component-level TBDs above.
+The logical flow from validated telemetry to inference is intentionally not tied
+to a final transport. Redis is derived state, simulator truth and ML risk are
+separate, and 200 events/second and sub-second reads remain targets. The initial
+ingestion durability/replay/idempotency behavior is now covered by the inbox and
+integration tests; remaining security and component details follow as needed.
 
-Phase 2 is sufficiently complete for detailed component design. The simulator
-increment has since received explicit design approval and is implemented. Kafka,
-storage, ML, API, and frontend design choices remain subject to confirmation
-before their implementation.
+The simulator and Kafka ingestion increments have received explicit design
+approval and are implemented. The inbox is scoped to ingestion reliability;
+broader storage, ML, API, and frontend decisions are confirmed as those
+demo-focused increments begin.
