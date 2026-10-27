@@ -3,7 +3,11 @@
 ## 1. Introduction
 This document defines the initial requirements for the Device Health and Predictive Maintenance Platform. It establishes the problem, intended users, functional scope, quality attributes, ML goals, data expectations, deployment expectations, and testing expectations for SDLC Phase 1.
 
-This project is intentionally in the Requirements Gathering and Analysis phase. No implementation decisions are considered final beyond this requirements baseline.
+This document records the Phase 1 Requirements Gathering and Analysis baseline.
+Its phase-specific deferrals describe that original checkpoint. Current project
+progress and subsequent approved implementation decisions are recorded in the
+README and component design documents; the functional requirements below remain
+the product baseline.
 
 ## 2. Problem Statement
 Modern device fleets can fail in ways that are difficult to detect before they cause downtime, reduced performance, or safety issues. Engineers need visibility into device behavior, early warning signals, and actionable maintenance guidance. The platform must help teams ingest telemetry, detect anomalies, track device health, estimate near-term failure risk, and support firmware comparison over time.

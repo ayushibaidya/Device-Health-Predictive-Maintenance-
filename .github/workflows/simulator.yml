@@ -1,0 +1,40 @@
+name: Simulator
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-gcc:
+    name: Linux / GCC 16.2
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    container:
+      image: gcc:16.2@sha256:07280eb2e744f1b7a2d8d4a3894c089ea07266c109758afc388a634bd098e4eb
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Install pinned CMake in the ephemeral CI container
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-venv
+          python3 -m venv /tmp/device-health-cmake
+          /tmp/device-health-cmake/bin/pip install --disable-pip-version-check cmake==4.4.3
+      - name: Verify toolchain
+        run: |
+          test "$(g++ -dumpfullversion)" = "16.2.0"
+          /tmp/device-health-cmake/bin/cmake --version
+      - name: Configure release build
+        run: /tmp/device-health-cmake/bin/cmake --preset dev -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: /tmp/device-health-cmake/bin/cmake --build --preset dev --parallel 2
+      - name: Test
+        run: /tmp/device-health-cmake/bin/ctest --preset dev --parallel 2
+      - name: Demonstrate simulator
+        run: /tmp/device-health-cmake/bin/cmake --build --preset dev --target simulator_demo

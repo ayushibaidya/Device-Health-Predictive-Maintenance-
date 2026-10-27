@@ -3,7 +3,14 @@
 ## Testing Goals
 The testing strategy for this project will focus on validating that the system behaves correctly, remains stable under failure, supports maintainability, and provides evidence that product requirements are met as implementation proceeds.
 
-The strategy will be extended as the platform becomes more concrete. This document is intentionally at the requirements level only and does not specify implementation-specific test cases.
+The strategy will be extended as the platform becomes more concrete. The broader
+strategy remains at the requirements level; component-specific executable tests
+and verification commands are documented with each implemented component.
+
+The first simulator increment now has executable lifecycle, model, JSON contract,
+CLI, recovery, and repeatability checks. Its commands and demo are documented in
+[simulator.md](simulator.md); the broader strategy below applies as additional
+components are introduced. Run `ctest --preset dev` after building.
 
 ## Unit Testing
 Unit tests will validate the correctness of individual logic components, calculations, feature transformations, model utility functions, and validation logic.
