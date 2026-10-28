@@ -10,7 +10,7 @@ task_producer_pid=""
 cleanup() {
     if [[ -n "$task_producer_pid" ]]; then kill "$task_producer_pid" 2>/dev/null || true; fi
     docker compose -p "$task_project" unpause kafka >/dev/null 2>&1 || true
-    docker compose -p "$task_project" down --volumes --remove-orphans >/dev/null
+    docker compose -p "$task_project" --profile tools down --volumes --remove-orphans >/dev/null
 }
 trap cleanup EXIT
 mkdir -p "$KAFKA_FIXTURE_DIR"

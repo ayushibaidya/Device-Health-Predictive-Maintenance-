@@ -16,7 +16,8 @@ This applies migrations without deleting existing data, publishes nine C++
 readings through Kafka (including a device reset), validates/persists them,
 shows lifecycle-filtered history and current device state, and demonstrates
 cache recovery and rebuild. Success ends with `DATA ACCESS DEMO PASSED`.
-Services stay running; `docker compose down` stops them and keeps PostgreSQL data.
+Services stay running; `docker compose --profile tools down` stops all project
+services, including the API if running, and keeps PostgreSQL data.
 
 Read the same data through the reusable Python query layer and CLI:
 

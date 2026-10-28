@@ -22,7 +22,7 @@ Inspect the stored evidence and stop the services:
 ```sh
 docker compose exec postgres psql -U device_health -d device_health -c \
   "SELECT device_id, event_time, payload->>'device_state' AS state FROM telemetry_inbox ORDER BY persisted_at DESC LIMIT 12;"
-docker compose down
+docker compose --profile tools down
 ```
 
 `down` preserves named data volumes. Local Kafka binds to `localhost:19092`;

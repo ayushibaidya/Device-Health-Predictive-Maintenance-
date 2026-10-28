@@ -24,10 +24,15 @@ curl 'http://localhost:8000/api/v1/devices?limit=2'
 curl http://localhost:8000/api/v1/devices/device-002
 curl 'http://localhost:8000/api/v1/devices/device-002/telemetry?limit=2'
 curl http://localhost:8000/health/ready
-docker compose down
+docker compose --profile tools down
 ```
 
-`down` keeps the database volumes. To start only the API against existing data:
+This shutdown command keeps the database volumes. The API and migration services
+use the `tools` profile, so enable it during shutdown as well. Plain
+`docker compose down` leaves those containers behind, which can keep the network
+in use and leave the API unhealthy after PostgreSQL stops. See
+[Docker's profile shutdown behavior](https://docs.docker.com/compose/how-tos/profiles/#stop-application-and-services-with-specific-profiles).
+To start only the API against existing data:
 
 ```sh
 docker compose up -d --build --wait api
