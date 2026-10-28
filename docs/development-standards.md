@@ -119,10 +119,11 @@ does not enforce it by itself.
 ### Phase-based implementation commits
 
 Keep Git checkpoints aligned with approved implementation increments. Commit
-each completed increment separately, including its code, focused tests,
-build/CI configuration, and related documentation. Use a component scope in the
-Conventional Commit message, and keep subsequent increments out of that commit.
-The simulator and Kafka ingestion are the first implementation increments.
+each increment's code, focused tests, and build/CI configuration in focused
+implementation commits. Keep related documentation changes in a separate focused
+commit before merge, following the documentation review below. Use a component
+scope in the Conventional Commit message, and keep subsequent increments out of
+that commit.
 A local commit is a checkpoint, not a substitute for the pull request,
 remote CI checks, and merge required by the Definition of Done.
 
@@ -140,6 +141,33 @@ branches, focused commits, and relevant tests while making every increment
 advance ingestion, persistence/current state, API, dashboard/alerts, ML, and
 hosting. Keep design records concise and confirm material decisions without
 delaying routine implementation.
+
+### Documentation synchronization and pre-merge review
+
+Keep project documentation synchronized with the implemented system as each
+feature progresses. Update the relevant design or contract document when
+implementation clarifies or changes an approved decision. Confirm any new design
+decision with the owner under the existing approval rule before implementing it.
+Distinguish implemented behavior from planned behavior and remove descriptions
+that no longer match the system.
+
+Update `README.md` only when user-facing setup, capabilities, the architecture
+summary, or demo instructions change. Add or update an ADR only for a meaningful
+architectural decision. Routine code changes do not justify unrelated document
+rewrites or a new ADR.
+
+Before merging each feature, check and record in the pull request:
+
+1. Whether architecture, design, or contract documents need updates.
+2. Whether `README.md` needs updates under the criteria above.
+3. Whether a new or updated ADR is justified.
+4. Whether implementation has resolved an existing TBD that can now be documented.
+
+When documentation updates are needed, include them in a separate focused
+`docs(<component>): ...` commit on the feature branch before it is merged. Coding
+agents prepare the changes and provide separate implementation/documentation
+commit commands for the owner to run. Do not create an empty documentation commit
+when the review finds no changes are needed.
 
 ## 4. Commit messages
 
@@ -167,8 +195,9 @@ A feature or fix is done only when all applicable items below are satisfied:
   pass locally and in CI.
 - Configuration, schema/migrations, operational behavior, and security controls
   are updated when affected. No credentials or sensitive sample data are added.
-- Relevant documentation and setup instructions are updated, including version
-  pins or environment-variable documentation when those change.
+- The documentation pre-merge review is recorded in the pull request. Required
+  documentation updates, including changed version pins and environment
+  variables, are included in a separate focused documentation commit before merge.
 - The pull request is reviewed, required CI checks pass, and the change is merged
   to `main` using the agreed merge strategy.
 
