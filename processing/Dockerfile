@@ -4,6 +4,7 @@ WORKDIR /app
 COPY processing/requirements.lock /app/requirements.lock
 RUN python -m pip install --no-cache-dir --require-hashes --only-binary=:all: -r requirements.lock
 COPY processing/device_health_ingestion /app/device_health_ingestion
+COPY processing/migrations /app/migrations
 USER 10001:10001
 ENTRYPOINT ["python", "-m", "device_health_ingestion"]
 
@@ -14,6 +15,7 @@ RUN python -m pip install --no-cache-dir --require-hashes --only-binary=:all: -r
 COPY processing/tests /app/tests
 COPY processing/pyproject.toml /app/pyproject.toml
 COPY processing/demo.py /app/demo.py
+COPY processing/demo_data.py /app/demo_data.py
 USER 10001:10001
 ENTRYPOINT []
 CMD ["python", "-m", "pytest", "-m", "not integration", "-q", "-o", "cache_dir=/tmp/pytest-cache"]

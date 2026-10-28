@@ -28,10 +28,13 @@ class DeadLetters(Protocol):
 
 
 class Processor:
-    def __init__(self, inbox: Inbox, dlq: DeadLetters, *, attempts=5, sleep=time.sleep):
+    def __init__(
+        self, inbox: Inbox, dlq: DeadLetters, *, attempts=5, sleep=time.sleep, refresh_latest=None
+    ):
         if not 1 <= attempts <= 10:
             raise ValueError("retry attempts must be in [1, 10]")
         self.inbox, self.dlq, self.attempts, self.sleep = inbox, dlq, attempts, sleep
+        self.refresh_latest = refresh_latest
 
     def _retry(self, operation):
         for attempt in range(self.attempts):
@@ -56,6 +59,10 @@ class Processor:
             reason = str(error)
             self._retry(lambda: self.dlq.send(record, reason))
             result = {"outcome": "dlq"}
+        if result["outcome"] != "dlq" and self.refresh_latest is not None:
+            result["latest_cache"] = (
+                "refreshed" if self.refresh_latest(result["device_id"]) else "degraded"
+            )
         # A commit failure propagates. Redelivery is safe because the inbox is idempotent.
         commit()
         return result

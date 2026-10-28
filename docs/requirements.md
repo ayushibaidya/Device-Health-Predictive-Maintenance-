@@ -229,6 +229,11 @@ DATA-011: Ingestion events shall carry a globally unique event_id, lifecycle run
 and stable device_id. A narrow PostgreSQL inbox shall enforce unique event_id
 values so duplicate detection survives consumer restarts.
 
+DATA-012: App-ready history shall support bounded device/lifecycle/time queries.
+Latest device state shall survive consumer restarts and duplicate replay. Redis
+shall be derived from PostgreSQL, recoverable on loss, and optional for durable
+ingestion; cache failures shall not prevent successful database-backed commits.
+
 ## 11. Security Requirements
 SEC-001: The system shall protect user and operational access with appropriate authentication and authorization controls.
 
@@ -298,6 +303,10 @@ TEST-014: The project shall include tests covering alert acknowledgement behavio
 TEST-015: Ingestion tests shall exercise real Kafka and PostgreSQL, replay after
 consumer restart, the database-before-offset crash window, DLQ acknowledgement,
 and transient failure recovery.
+
+TEST-016: Data-access tests shall cover history filtering/pagination, lifecycle
+resets, replay ordering, populated-inbox migrations, Redis expiry/fallback/rebuild,
+and durable ingestion during Redis connection failure.
 
 ## 15. Deployment Requirements
 DEPLOY-001: The system shall support a local, reproducible development environment for running the platform without requiring a final production deployment.

@@ -2,7 +2,8 @@
 
 Status: Phase 2 architecture baseline complete. The simulator component design
 was approved on October 27, 2026 and its first implementation increment is now
-available. Kafka ingestion and its approved PostgreSQL inbox are also implemented;
+available. Kafka ingestion, indexed inbox history, and recoverable Redis latest
+state are also implemented;
 the remaining increments follow the hosted-MVP path in the README.
 
 This document records logical responsibilities and system contracts. A logical component does not have to be an independently deployed service in the MVP. Details marked TBD are deferred to detailed component design or implementation unless they become an architectural dependency.
@@ -119,7 +120,9 @@ is added with those components.
 
 PostgreSQL owns durable application history; Redis owns derived live operational state; Kafka transports events; the simulator owns ground truth. Redis loss may reduce current-state performance but must not destroy durable history. Anything needed for investigation, audit, training, or reproducibility is durable. Cache contents, current summaries, and temporary rolling feature state may be derived or ephemeral.
 
-Exact PostgreSQL schema/indexes, Redis keys/TTLs/invalidation and rebuild details, Kafka topic/retention/partition settings, artifact storage implementation, and data-retention durations are TBD during detailed component design / implementation.
+Implemented inbox indexes, Redis keys/TTLs/rebuild, and Kafka topic settings are
+recorded in [persistence.md](persistence.md) and [kafka-ingestion.md](kafka-ingestion.md).
+Broader PostgreSQL schema, artifact storage, and retention details remain deferred.
 
 ## Telemetry Contract
 
@@ -231,8 +234,8 @@ Design targets, not measured benchmarks:
 Exact API SLA, maximum throughput, tested fleet size, benchmark method, resource
 sizing, and recovery objectives remain targets requiring measurement. The initial
 ingestion transaction/offset and replay behavior is implemented and tested in
-kafka-ingestion.md; Redis reconstruction and broader recovery follow with the
-next components.
+kafka-ingestion.md. Redis fallback/reconstruction and populated-inbox migration
+are covered in persistence.md; broader recovery follows with later components.
 
 ## Retention and Data Lifecycle
 
@@ -266,7 +269,7 @@ separate, and 200 events/second and sub-second reads remain targets. The initial
 ingestion durability/replay/idempotency behavior is now covered by the inbox and
 integration tests; remaining security and component details follow as needed.
 
-The simulator and Kafka ingestion increments have received explicit design
-approval and are implemented. The inbox is scoped to ingestion reliability;
-broader storage, ML, API, and frontend decisions are confirmed as those
-demo-focused increments begin.
+The simulator, Kafka ingestion, and app-ready data-access increments have received
+explicit design approval and are implemented. History/latest queries reuse the
+inbox rather than introducing the broader draft historical schema. ML, API, and
+frontend decisions are confirmed as those demo-focused increments begin.

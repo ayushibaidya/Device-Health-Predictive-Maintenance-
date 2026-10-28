@@ -1,8 +1,9 @@
 # Phase 3 Telemetry and Core Data Schema Draft
 
 Status: Kafka identity fields and the narrow PostgreSQL ingestion inbox were
-approved October 27, 2026 and are implemented. Broader historical PostgreSQL
-tables remain a design draft.
+approved October 27, 2026 and are implemented. Approved app-ready data access
+adds indexed queries and recoverable latest state to that inbox. Broader
+historical PostgreSQL tables remain a design draft.
 
 This document defines the initial schema contract for the simulator → Kafka message path and the durable PostgreSQL tables needed for the MVP. It is intentionally a design artifact and not implementation code.
 
@@ -78,7 +79,10 @@ The implemented `telemetry_inbox` is defined in
 [001_telemetry_inbox.sql](../processing/migrations/001_telemetry_inbox.sql). It
 stores unique event identity, lifecycle/device identity, event time, validated
 JSON, Kafka coordinates, and persistence time. It provides durable deduplication
-before offset commits; the broader historical tables below are still drafts.
+before offset commits. [002_data_access.sql](../processing/migrations/002_data_access.sql)
+adds a durable accepted-event order and history/latest query indexes. See
+[persistence.md](persistence.md) for lifecycle ordering, pagination, and cache
+recovery. The broader historical tables below are still drafts.
 
 ### 3.0 Schema decision summary
 
@@ -236,5 +240,6 @@ It intentionally does not decide:
 
 ## 6. Next step
 
-Kafka ingestion and its narrow durable inbox are implemented. The next storage
-increment adds queryable telemetry and latest-state views against this contract.
+Kafka ingestion, queryable telemetry, and recoverable latest-state views are
+implemented against the inbox contract. The next increment exposes this data
+through FastAPI before the dashboard is built.

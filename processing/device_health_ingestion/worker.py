@@ -13,6 +13,8 @@ from confluent_kafka import Consumer, KafkaException, Producer
 
 from .core import Processor, Record
 from .errors import TransientProcessingError
+from .latest import LatestState, configured_cache
+from .queries import TelemetryQueries
 from .store import PostgresInbox, database_dsn
 
 
@@ -118,9 +120,15 @@ def main(argv=None):
     except ValueError:
         parser.error("Configure DATABASE_URL or PGHOST/PGDATABASE/PGUSER/PGPASSWORD")
     inbox = PostgresInbox(dsn)
+    queries = TelemetryQueries(dsn)
+    try:
+        cache = configured_cache()
+    except ValueError:
+        parser.error("Configure a valid REDIS_URL and LATEST_CACHE_TTL_SECONDS in [1, 3600]")
+    latest = LatestState(queries, cache)
     consumer = kafka_consumer(args.bootstrap_servers, args.group)
     dead_letters = KafkaDeadLetters(dlq_producer(args.bootstrap_servers))
-    processor = Processor(inbox, dead_letters)
+    processor = Processor(inbox, dead_letters, refresh_latest=latest.refresh if cache else None)
     stopping = False
 
     def stop(*_):
@@ -175,6 +183,9 @@ def main(argv=None):
     finally:
         consumer.close()
         inbox.close()
+        queries.close()
+        if cache is not None:
+            cache.close()
 
 
 if __name__ == "__main__":

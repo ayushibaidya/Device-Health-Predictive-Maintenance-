@@ -1,7 +1,7 @@
 import os
 
 import psycopg
-from psycopg.conninfo import make_conninfo
+from psycopg.conninfo import conninfo_to_dict, make_conninfo
 from psycopg.types.json import Jsonb
 
 from .errors import PermanentProcessingError, TransientProcessingError
@@ -21,7 +21,7 @@ def database_dsn():
     )
 
 
-class PostgresInbox:
+class PostgresConnection:
     def __init__(self, dsn: str):
         self.dsn = dsn
         self.connection = None
@@ -32,10 +32,18 @@ class PostgresInbox:
                 self.dsn,
                 autocommit=True,
                 connect_timeout=5,
-                options="-c statement_timeout=5000 -c lock_timeout=5000",
+                options=conninfo_to_dict(self.dsn).get("options", "")
+                + " -c statement_timeout=5000 -c lock_timeout=5000",
             )
         return self.connection
 
+    def close(self):
+        if self.connection is not None:
+            self.connection.close()
+            self.connection = None
+
+
+class PostgresInbox(PostgresConnection):
     def persist(self, event, record):
         try:
             connection = self._connect()
@@ -75,8 +83,3 @@ class PostgresInbox:
         ) as error:
             self.close()
             raise TransientProcessingError("database temporarily unavailable") from error
-
-    def close(self):
-        if self.connection is not None:
-            self.connection.close()
-            self.connection = None

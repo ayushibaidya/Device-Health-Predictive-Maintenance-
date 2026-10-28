@@ -13,12 +13,13 @@ cleanup() {
 }
 trap cleanup EXIT
 mkdir -p "$KAFKA_FIXTURE_DIR"
-docker compose -p "$task_project" build producer tests
+docker compose -p "$task_project" build producer tests migrate
 docker compose -p "$task_project" run --rm --no-deps -T tests \
-    python -m ruff check device_health_ingestion tests demo.py
+    python -m ruff check device_health_ingestion tests demo.py demo_data.py
 docker compose -p "$task_project" run --rm --no-deps -T tests \
     python -m pytest -m 'not integration' -q -o cache_dir=/tmp/pytest-cache
-docker compose -p "$task_project" up -d --wait kafka postgres
+docker compose -p "$task_project" up -d --wait kafka postgres redis
+docker compose -p "$task_project" run --rm -T migrate
 docker compose -p "$task_project" run --rm -T kafka-init
 docker compose -p "$task_project" run --rm --no-deps -T producer \
     --output kafka --steps 2 --reset-at-step 1 > "$KAFKA_FIXTURE_DIR/producer-events.jsonl"
@@ -35,4 +36,4 @@ sleep 2
 docker compose -p "$task_project" unpause kafka
 wait "$task_producer_pid"
 task_producer_pid=""
-printf 'Kafka integration checks and broker-interruption recovery passed.\n'
+printf 'Ingestion/data-access integration checks and broker-interruption recovery passed.\n'

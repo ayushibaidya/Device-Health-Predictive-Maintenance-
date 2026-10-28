@@ -2,7 +2,9 @@
 
 Approved October 27, 2026: C++ simulator -> Kafka -> Python validation -> a narrow
 PostgreSQL inbox. The inbox was explicitly brought forward for durable
-idempotency; the full historical schema and Redis remain subsequent work.
+idempotency. The subsequent approved [data-access increment](persistence.md)
+reuses this inbox for indexed history/latest queries and adds Redis as a
+recoverable cache; the full historical schema remains deferred.
 
 ## Run the demo
 
@@ -52,7 +54,9 @@ only `telemetry_inbox`: unique event ID, lifecycle/device IDs, event time,
 validated JSON, Kafka source coordinates, and persistence time.
 
 The consumer disables auto-commit and auto-offset-store. It validates an event,
-commits its PostgreSQL insert, then synchronously commits the Kafka offset. An
+commits its PostgreSQL insert, attempts an optional derived-state cache refresh,
+then synchronously commits the Kafka offset. Redis failure does not block that
+offset commit. An
 identical duplicate is identified in PostgreSQL and acknowledged without a new
 row. A conflicting payload reusing an ID goes to the DLQ without overwriting the
 original row. A crash between database and Kafka commits causes safe redelivery.

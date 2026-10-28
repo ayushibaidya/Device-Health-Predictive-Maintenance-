@@ -69,6 +69,31 @@ services:
       timeout: 5s
       retries: 30
 
+  redis:
+    image: redis:8.10.3-alpine@sha256:896f241f438ab6a210cfb24f573b84bea721a4cbe67f1b4fd07eb638b3b02a7b
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+
+  migrate:
+    profiles: [tools]
+    build:
+      context: .
+      dockerfile: processing/Dockerfile
+      target: runtime
+    entrypoint: ["python", "-m", "device_health_ingestion.migrate"]
+    environment: &database-environment
+      PGHOST: postgres
+      PGDATABASE: device_health
+      PGUSER: device_health
+      PGPASSWORD: ${POSTGRES_PASSWORD:-local-demo-only}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   producer:
     profiles: [tools]
     build:
@@ -87,17 +112,18 @@ services:
       dockerfile: processing/Dockerfile
       target: runtime
     environment: &consumer-environment
+      <<: *database-environment
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_GROUP_ID: device-telemetry-validation-v1
-      PGHOST: postgres
-      PGDATABASE: device_health
-      PGUSER: device_health
-      PGPASSWORD: ${POSTGRES_PASSWORD:-local-demo-only}
+      REDIS_URL: redis://redis:6379/0
+      LATEST_CACHE_TTL_SECONDS: ${LATEST_CACHE_TTL_SECONDS:-30}
     depends_on:
       kafka-init:
         condition: service_completed_successfully
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   tests:
     profiles: [tools]
@@ -113,6 +139,8 @@ services:
         condition: service_completed_successfully
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   kafka-data:

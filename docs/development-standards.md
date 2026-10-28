@@ -1,7 +1,7 @@
 # Development Standards
 
 This document defines the minimum reproducibility, security, collaboration, and
-quality rules for implementation. The Phase 3 simulator and Kafka baseline is
+quality rules for implementation. The simulator, Kafka, and data-access baseline is
 pinned below. Other planned technologies remain unpinned until their component
 implementation begins. Do not infer a version from a developer's machine or use
 floating `latest` dependencies.
@@ -14,7 +14,7 @@ Use the repository's version files, build manifests, dependency lockfiles, and
 container image tags as the executable source of truth. CI and local setup must
 use those same pins.
 
-### Phase 3: simulator and Kafka ingestion
+### Implemented simulator, ingestion, and data access
 
 | Component | Required baseline |
 | --- | --- |
@@ -26,6 +26,7 @@ use those same pins.
 | Simulator JSON encoding | nlohmann/json 3.12.0; release archive and SHA-256 pinned in `cmake/Dependencies.cmake` |
 | Kafka client | `librdkafka` 2.15.1 |
 | Kafka broker | Apache Kafka 4.3.1, official Docker image, KRaft mode; ZooKeeper is not used |
+| Latest-state cache | Redis 8.10.3, official Alpine image pinned by digest; redis-py 8.1.0 |
 
 `librdkafka` 2.15.1 remains the explicitly approved ingestion baseline. Dependency
 upgrades are separate reviewed changes, rather than implicit updates to whichever
@@ -54,7 +55,10 @@ required. The C++ CI bootstrap uses Python solely to install pinned CMake inside
 ephemeral GCC container; it does not introduce a Python runtime for the simulator.
 
 The consumer pins Python 3.13.18, confluent-kafka 2.15.1, and
-psycopg/psycopg-binary 3.3.6. PostgreSQL 18.6 implements only the ingestion inbox.
+psycopg/psycopg-binary 3.3.6. PostgreSQL 18.6 stores the ingestion inbox, now also
+used for indexed history and durable latest-state queries. Broader historical
+tables remain deferred. Redis latest state is derived and recoverable, as
+described in [persistence.md](persistence.md).
 Runtime/dev lockfiles pin transitive dependencies and hashes; image tags and
 digests pin execution environments. Docker Engine 27+ and Compose 2.24+ are the
 supported baseline, tested locally with 29.2.1 and 5.0.2 respectively. See
