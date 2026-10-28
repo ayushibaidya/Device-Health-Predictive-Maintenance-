@@ -19,6 +19,8 @@ out/
 build/
 dist/
 *.tsbuildinfo
+playwright-report/
+test-results/
 
 # C/C++
 *.o

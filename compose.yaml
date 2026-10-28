@@ -150,6 +150,31 @@ services:
       retries: 15
       start_period: 5s
 
+  frontend:
+    profiles: [tools]
+    build:
+      context: ./frontend
+      target: runtime
+    environment:
+      API_BASE_URL: http://api:8000
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000', {signal: AbortSignal.timeout(10000)}).then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 12s
+      retries: 15
+      start_period: 10s
+
+  frontend-tests:
+    profiles: [tools]
+    build:
+      context: ./frontend
+      target: test
+    environment:
+      DASHBOARD_EXTERNAL_URL: ${DASHBOARD_EXTERNAL_URL:-}
+      DASHBOARD_API_URL: http://api:8000
+
   tests:
     profiles: [tools]
     build:
