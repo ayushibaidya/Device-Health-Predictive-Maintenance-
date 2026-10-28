@@ -54,8 +54,9 @@ processing increments. This API does not manufacture alert counts or predictions
   to PostgreSQL. Liveness is independent of either data store.
 - This increment serves read-only local development access, bound to
   `127.0.0.1:8000` on the host, without login. Public access/authentication is a
-  separate deployment decision before hosting. Leave CORS disabled until the
-  frontend origin is known; no wildcard origins or write endpoints are added.
+  separate deployment decision before hosting. CORS remains disabled; the
+  subsequent approved dashboard uses Next.js server-side API reads. No wildcard
+  origins or write endpoints are added.
 - Reuse synchronous psycopg calls with synchronous FastAPI handlers. Each request
   owns and closes its database connection; concurrent requests must not share a
   mutable connection. Redis uses its client connection pool and application cleanup.

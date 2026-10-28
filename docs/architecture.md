@@ -3,7 +3,8 @@
 Status: Phase 2 architecture baseline complete. The simulator component design
 was approved on October 27, 2026 and its first implementation increment is now
 available. Kafka ingestion, indexed inbox history, and recoverable Redis latest
-state, and a read-only FastAPI service are also implemented;
+state, a read-only FastAPI service, and the initial fleet/device dashboard are
+also implemented;
 the remaining increments follow the hosted-MVP path in the README.
 
 This document records logical responsibilities and system contracts. A logical component does not have to be an independently deployed service in the MVP. Details marked TBD are deferred to detailed component design or implementation unless they become an architectural dependency.
@@ -213,7 +214,16 @@ administration, advanced maintenance scheduling, BI/Power BI, assignment, and
 escalation are out of scope. The approved read API's schemas, pagination, errors,
 local access, and health semantics are recorded in [basic-api.md](basic-api.md).
 Public authentication/authorization, future alert/prediction contracts, and
-frontend details remain design decisions for their implementation increments.
+future frontend workflows remain design decisions for their implementation increments.
+
+The initial dashboard is implemented at `/` and `/devices/[deviceId]`, using
+Next.js server components to read the existing FastAPI endpoints. It provides
+fleet counts, latest telemetry, lifecycle-aware history charts/table, manual
+refresh and loading/empty/error/not-found views. The browser does not connect
+directly to data stores or FastAPI; no backend CORS change is required. The
+approved data-access, pagination, charting, and component decisions are recorded
+in [dashboard-design.md](dashboard-design.md) and [frontend.md](frontend.md).
+Alert and prediction portions of the target screens above remain unimplemented.
 
 ## Deployment and Environments
 
@@ -278,5 +288,6 @@ integration tests; remaining security and component details follow as needed.
 The simulator, Kafka ingestion, and app-ready data-access increments have received
 explicit design approval and are implemented. History/latest queries reuse the
 inbox rather than introducing the broader draft historical schema. The basic API
-design is also approved and implemented. ML, alerts, frontend, and public access
+and initial dashboard designs are also approved and implemented. ML, alerts,
+further frontend workflows, and public access
 decisions are confirmed as those demo-focused increments begin.

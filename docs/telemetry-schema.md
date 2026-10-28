@@ -242,4 +242,5 @@ It intentionally does not decide:
 
 Kafka ingestion, queryable telemetry, and recoverable latest-state views are
 implemented against the inbox contract. A read-only FastAPI service now exposes
-this data; the dashboard, alerts, and ML remain upcoming increments.
+this data. The initial dashboard now consumes those APIs; alerts and ML remain
+upcoming increments. See [frontend.md](frontend.md) for the implemented views.

@@ -89,7 +89,7 @@ concurrent request isolation. Local verification passed 90 Python unit tests,
 the same automated suite on pull requests and main pushes.
 
 This is read-only local development access on `127.0.0.1`; login/public-access
-design is deferred until deployment. CORS is disabled until a frontend origin
-is selected. The next feature is the Next.js/React/TypeScript/Tailwind dashboard,
-with alert processing and ML added in their own reviewed increments. The user
+design is deferred until deployment. The implemented dashboard uses Next.js server-side API reads, so
+CORS remains disabled; see [frontend.md](frontend.md). Alert processing and ML
+will be added in their own reviewed increments. The user
 creates the commit and push after reviewing the finished changes.

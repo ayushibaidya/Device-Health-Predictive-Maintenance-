@@ -101,5 +101,6 @@ It uses real Kafka, PostgreSQL, and Redis, cleans up only its own project/volume
 and runs in GitHub Actions. Performance targets remain unmeasured.
 
 The subsequent `feat/basic-api` increment exposes fleet summary, device detail,
-and history through FastAPI; see [basic-api.md](basic-api.md). Alert processing
-and the dashboard remain upcoming increments.
+and history through FastAPI; see [basic-api.md](basic-api.md). The initial
+dashboard consumes those APIs; see [frontend.md](frontend.md). Alert processing
+and ML remain upcoming increments.

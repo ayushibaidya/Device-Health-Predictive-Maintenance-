@@ -148,5 +148,16 @@ durable processing during cache connection failure. The C++ producer image
 retains its 39 CTest checks. The script also
 exercises a broker interruption and cleans only its own test volumes.
 `bash scripts/demo-api.sh` demonstrates the full implemented pipeline through
-HTTP, with history/current-state/cache recovery. Future UI/alert/ML tests are
+HTTP, with history/current-state/cache recovery. Additional UI and future alert/ML tests are
 added with their respective increments.
+
+## Implemented Frontend Verification
+
+`bash scripts/test-dashboard.sh` builds the pinned Next.js application and runs
+TypeScript, lint, four Node chart-data unit tests, and 16 Chromium browser cases.
+Test-only HTTP fixtures provide deterministic loading, empty, failure, pagination,
+and rendering scenarios. A separate browser smoke test uses real C++ events
+through Kafka, validation, PostgreSQL/Redis and FastAPI: fleet → device → history.
+No fixture data is used by the production application. The isolated test project
+owns its own ports, containers and disposable volumes; GitHub Actions runs the
+same command. Other browser engines and large-fleet measurements remain pending.

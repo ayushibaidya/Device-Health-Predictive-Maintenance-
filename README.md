@@ -1,30 +1,45 @@
 # Device Health and Predictive Maintenance Platform
 
 ## Project description
-The Device Health and Predictive Maintenance Platform is a distributed full-stack system for ingesting real-time telemetry from simulated embedded devices, analyzing device behavior, detecting anomalies, predicting failures using machine learning, and presenting device-health information to engineers through a web interface. The platform is intended to demonstrate broad software engineering capability across telemetry processing, distributed systems, backend services, machine learning, database design, observability, and cloud deployment.
+This project simulates a device fleet, streams telemetry through Kafka, saves
+validated readings in PostgreSQL, and presents current device state and history
+in a Next.js dashboard. Redis provides recoverable latest state and FastAPI
+provides the application data interface. Alert processing, ML predictions, and a
+public hosted release are planned subsequent increments.
 
 ## Project status
 Status: the C++ simulator and Kafka ingestion path are implemented. Events flow
 through Kafka, Python validation, and a durable PostgreSQL inbox with replay
 deduplication. App-ready history queries and recoverable Redis latest state are
 implemented. A read-only FastAPI service now exposes fleet summary, device
-details, and telemetry history with interactive API documentation. Upcoming
-increments add the dashboard/alerts, ML, and a public hosted demo.
+details, and telemetry history with interactive API documentation. The frontend
+now provides fleet counts, device investigation, telemetry charts/history,
+manual refresh, and loading/empty/error states. Alerts, ML, and public hosting
+remain upcoming increments.
 
 Before implementing each component, its toolchain and dependency versions must
 be pinned as described in [docs/development-standards.md](docs/development-standards.md).
 
-## Run the API demo
+## Run the dashboard demo
 
 With Docker running:
 
 ```sh
-bash scripts/demo-api.sh
+bash scripts/demo-dashboard.sh
 ```
 
-This runs **C++ simulator -> Kafka -> Python validation -> PostgreSQL/Redis ->
-FastAPI** and verifies HTTP responses against simulator events. Open
-[http://localhost:8000/docs](http://localhost:8000/docs) to try requests. See the
+Open **[http://localhost:3000](http://localhost:3000)**, select a device, and inspect
+its current readings and history. The first Docker build may take several
+minutes. This runs **C++ simulator -> Kafka -> Python validation ->
+PostgreSQL/Redis -> FastAPI -> Next.js**. All displayed readings come from the
+real API; the devices themselves are simulated. When finished, stop services
+with `docker compose --profile tools down`, which preserves saved data.
+
+Run `bash scripts/test-dashboard.sh` for the isolated frontend checks, including
+a browser journey through the real pipeline. The backend-only demo remains
+`bash scripts/demo-api.sh`, with interactive docs at
+[http://localhost:8000/docs](http://localhost:8000/docs). See the
+[frontend guide](docs/frontend.md) for setup, behavior, and tests, the
 [API guide](docs/basic-api.md) for routes and health checks, the
 [data-access guide](docs/persistence.md) for recovery, and the
 [Kafka guide](docs/kafka-ingestion.md) for delivery/replay details. Run
@@ -40,7 +55,8 @@ commit, and pull request:
 | Kafka ingestion | Implemented, including the approved ingestion inbox |
 | Persistence/current state | Implemented: bounded history queries and recoverable Redis latest state |
 | Basic API | Implemented: fleet/device/history endpoints, health checks, and interactive docs; alert endpoints follow alert processing |
-| Dashboard | Fleet/device views and alert acknowledgement |
+| Dashboard | Implemented: fleet/device views, current values, history charts, refresh, and application states |
+| Alerts | Planned: durable alert processing, display, and acknowledgement |
 | ML baseline | Failure probability and anomaly signal visible in the UI |
 | Hosted release | Public URL, health checks, and automatically seeded demo data |
 
@@ -69,7 +85,8 @@ the checksum-pinned nlohmann/json 3.12.0 dependency.
 - Caching / low-latency state: Redis 8.10.3, redis-py 8.1.0
 - Relational storage: PostgreSQL 18.6 (inbox, indexed history queries, durable latest state)
 - Backend: Python 3.13.18, FastAPI 0.162.0, Pydantic 2.14.1, Uvicorn 0.54.0; existing psycopg queries and SQL migrations
-- Frontend: Next.js, React, TypeScript, Tailwind CSS (versions to be pinned before implementation)
+- Frontend: Node 24.22.1/npm 11.19.1, Next.js 16.4.3, React 19.3.1, TypeScript 6.0.3, Tailwind CSS 4.3.3, Recharts 3.10.1
+- Frontend browser tests: Playwright 1.64.1; Docker/Chromium and native Apple Silicon checks
 - Machine learning: Python, NumPy, Pandas, scikit-learn, optional XGBoost
 - Infrastructure: Docker, Docker Compose, Kubernetes, Terraform
 - Cloud: AWS
@@ -90,6 +107,8 @@ the checksum-pinned nlohmann/json 3.12.0 dependency.
 - [docs/persistence.md](docs/persistence.md)
 - [docs/basic-api-design.md](docs/basic-api-design.md)
 - [docs/basic-api.md](docs/basic-api.md)
+- [docs/dashboard-design.md](docs/dashboard-design.md)
+- [docs/frontend.md](docs/frontend.md)
 
 Implementation is local-first and follows the documented architecture, schema,
 security, and development standards. Cloud infrastructure and production

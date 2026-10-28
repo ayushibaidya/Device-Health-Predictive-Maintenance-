@@ -28,6 +28,10 @@ use those same pins.
 | Kafka broker | Apache Kafka 4.3.1, official Docker image, KRaft mode; ZooKeeper is not used |
 | Latest-state cache | Redis 8.10.3, official Alpine image pinned by digest; redis-py 8.1.0 |
 | HTTP API | FastAPI 0.162.0, Pydantic 2.14.1, Uvicorn 0.54.0; HTTPX 0.28.1 for tests/demo |
+| Frontend runtime/build | Node 24.22.1 LTS, npm 11.19.1; Docker tag and digest pinned |
+| Frontend framework | Next.js 16.4.3, React/React DOM 19.3.1, TypeScript 6.0.3 |
+| Frontend styling/charts | Tailwind CSS 4.3.3, Recharts 3.10.1 |
+| Frontend verification | Playwright 1.64.1, ESLint 10.13.0 with Next.js config 16.4.3; Node test runner for chart data |
 
 `librdkafka` 2.15.1 remains the explicitly approved ingestion baseline. Dependency
 upgrades are separate reviewed changes, rather than implicit updates to whichever
@@ -62,6 +66,10 @@ tables remain deferred. Redis latest state is derived and recoverable, as
 described in [persistence.md](persistence.md).
 The read-only API uses the same Python image, existing psycopg query layer and
 SQL migration runner. See [basic-api.md](basic-api.md) for its approved contract.
+The frontend pins all direct dependencies and commits the npm integrity
+lockfile. `.nvmrc` and package engines match the Docker runtime. See
+[frontend.md](frontend.md) for setup and checks; TypeScript 6.0.3 is the supported
+version for the pinned Next.js lint toolchain.
 Runtime/dev lockfiles pin transitive dependencies and hashes; image tags and
 digests pin execution environments. Docker Engine 27+ and Compose 2.24+ are the
 supported baseline, tested locally with 29.2.1 and 5.0.2 respectively. See
