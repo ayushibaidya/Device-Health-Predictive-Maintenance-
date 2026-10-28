@@ -241,5 +241,5 @@ It intentionally does not decide:
 ## 6. Next step
 
 Kafka ingestion, queryable telemetry, and recoverable latest-state views are
-implemented against the inbox contract. The next increment exposes this data
-through FastAPI before the dashboard is built.
+implemented against the inbox contract. A read-only FastAPI service now exposes
+this data; the dashboard, alerts, and ML remain upcoming increments.

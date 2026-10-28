@@ -47,6 +47,35 @@ class TelemetryQueries(PostgresConnection):
         )
         return Reading(*rows[0]) if rows else None
 
+    def fleet_summary(self):
+        row = self._read(
+            """WITH latest AS (
+                   SELECT DISTINCT ON (device_id) payload FROM telemetry_inbox
+                   ORDER BY device_id, ingestion_order DESC
+               ) SELECT count(*),
+                   count(*) FILTER (WHERE payload->>'device_state' = 'HEALTHY'),
+                   count(*) FILTER (WHERE payload->>'device_state' = 'WARNING'),
+                   count(*) FILTER (WHERE payload->>'device_state' = 'CRITICAL'),
+                   count(*) FILTER (WHERE payload->>'device_state' = 'FAILED') FROM latest""",
+            (),
+        )[0]
+        return {
+            "total_devices": row[0],
+            "by_state": dict(zip(("HEALTHY", "WARNING", "CRITICAL", "FAILED"), row[1:])),
+        }
+
+    def ready(self):
+        try:
+            # Verify readable columns as well as migration bookkeeping. No writes.
+            self._read("SELECT event_id, ingestion_order FROM telemetry_inbox LIMIT 0", ())
+            rows = self._read(
+                "SELECT name FROM schema_migrations WHERE name = ANY(%s)",
+                (["001_telemetry_inbox.sql", "002_data_access.sql"],),
+            )
+            return len(rows) == 2
+        except psycopg.Error:
+            return False
+
     def latest_page(self, *, after_device="", limit=500):
         if type(limit) is not int or not 1 <= limit <= 1000:
             raise ValueError("limit must be an integer in [1, 1000]")

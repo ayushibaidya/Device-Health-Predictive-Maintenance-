@@ -125,13 +125,40 @@ services:
       migrate:
         condition: service_completed_successfully
 
+  api:
+    profiles: [tools]
+    build:
+      context: .
+      dockerfile: processing/Dockerfile
+      target: runtime
+    entrypoint: ["python", "-m", "uvicorn", "device_health_api.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    environment:
+      <<: *database-environment
+      REDIS_URL: redis://redis:6379/0
+      LATEST_CACHE_TTL_SECONDS: ${LATEST_CACHE_TTL_SECONDS:-30}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready', timeout=6).close()"]
+      interval: 3s
+      timeout: 7s
+      retries: 15
+      start_period: 5s
+
   tests:
     profiles: [tools]
     build:
       context: .
       dockerfile: processing/Dockerfile
       target: test
-    environment: *consumer-environment
+    environment:
+      <<: *consumer-environment
+      API_BASE_URL: http://api:8000
     volumes:
       - ${KAFKA_FIXTURE_DIR:-./build/kafka-integration}:/fixtures:ro
     depends_on:

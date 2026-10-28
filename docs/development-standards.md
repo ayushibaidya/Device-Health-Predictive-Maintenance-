@@ -1,7 +1,7 @@
 # Development Standards
 
 This document defines the minimum reproducibility, security, collaboration, and
-quality rules for implementation. The simulator, Kafka, and data-access baseline is
+quality rules for implementation. The simulator, Kafka, data-access, and API baseline is
 pinned below. Other planned technologies remain unpinned until their component
 implementation begins. Do not infer a version from a developer's machine or use
 floating `latest` dependencies.
@@ -27,6 +27,7 @@ use those same pins.
 | Kafka client | `librdkafka` 2.15.1 |
 | Kafka broker | Apache Kafka 4.3.1, official Docker image, KRaft mode; ZooKeeper is not used |
 | Latest-state cache | Redis 8.10.3, official Alpine image pinned by digest; redis-py 8.1.0 |
+| HTTP API | FastAPI 0.162.0, Pydantic 2.14.1, Uvicorn 0.54.0; HTTPX 0.28.1 for tests/demo |
 
 `librdkafka` 2.15.1 remains the explicitly approved ingestion baseline. Dependency
 upgrades are separate reviewed changes, rather than implicit updates to whichever
@@ -59,6 +60,8 @@ psycopg/psycopg-binary 3.3.6. PostgreSQL 18.6 stores the ingestion inbox, now al
 used for indexed history and durable latest-state queries. Broader historical
 tables remain deferred. Redis latest state is derived and recoverable, as
 described in [persistence.md](persistence.md).
+The read-only API uses the same Python image, existing psycopg query layer and
+SQL migration runner. See [basic-api.md](basic-api.md) for its approved contract.
 Runtime/dev lockfiles pin transitive dependencies and hashes; image tags and
 digests pin execution environments. Docker Engine 27+ and Compose 2.24+ are the
 supported baseline, tested locally with 29.2.1 and 5.0.2 respectively. See
@@ -122,6 +125,10 @@ Conventional Commit message, and keep subsequent increments out of that commit.
 The simulator and Kafka ingestion are the first implementation increments.
 A local commit is a checkpoint, not a substitute for the pull request,
 remote CI checks, and merge required by the Definition of Done.
+
+The repository owner runs `git add`, `git commit`, and `git push`. Coding agents
+leave implementation changes uncommitted and provide the exact commands after
+verification; do not create commits on the owner's behalf.
 
 Confirm unresolved software design decisions with the user before implementing
 them. Continue within an already approved design without asking for the same

@@ -3,7 +3,7 @@
 Status: Phase 2 architecture baseline complete. The simulator component design
 was approved on October 27, 2026 and its first implementation increment is now
 available. Kafka ingestion, indexed inbox history, and recoverable Redis latest
-state are also implemented;
+state, and a read-only FastAPI service are also implemented;
 the remaining increments follow the hosted-MVP path in the README.
 
 This document records logical responsibilities and system contracts. A logical component does not have to be an independently deployed service in the MVP. Details marked TBD are deferred to detailed component design or implementation unless they become an architectural dependency.
@@ -195,11 +195,12 @@ Logical MVP API capabilities (names may change during detailed API design):
 
 | Capability | Logical route |
 | --- | --- |
-| Fleet summary | `GET /fleet/summary` |
-| Device list and detail | `GET /devices`, `GET /devices/{id}` |
-| Device telemetry and predictions | `GET /devices/{id}/telemetry`, `GET /devices/{id}/predictions` |
-| Device alerts and alert list/detail | `GET /devices/{id}/alerts`, `GET /alerts`, `GET /alerts/{id}` |
-| Acknowledge alert | `POST /alerts/{id}/acknowledge` |
+| Fleet summary (implemented) | `GET /api/v1/fleet/summary` |
+| Device list and detail (implemented) | `GET /api/v1/devices`, `GET /api/v1/devices/{device_id}` |
+| Device telemetry (implemented) | `GET /api/v1/devices/{device_id}/telemetry` |
+| Device predictions (planned logical route) | `GET /devices/{id}/predictions` |
+| Device alerts and alert list/detail (planned logical routes) | `GET /devices/{id}/alerts`, `GET /alerts`, `GET /alerts/{id}` |
+| Acknowledge alert (planned logical route) | `POST /alerts/{id}/acknowledge` |
 
 Required MVP screens:
 
@@ -207,7 +208,12 @@ Required MVP screens:
 - Device Detail: metadata, current state and risk, latest telemetry, historical telemetry charts, anomaly result/score, failure probability, prediction history, and alert history. Users inspect behavior and prediction evidence.
 - Alerts: active alerts, severity, affected device, creation time, status, and acknowledgement state. Users can acknowledge an alert.
 
-The MVP targets reliability investigation with a high-level fleet overview. Model administration, advanced maintenance scheduling, BI/Power BI, assignment, and escalation are out of scope. Exact routes/schemas, pagination, authentication/authorization, API versioning/error format, page layout, filtering, charts, and responsive details remain TBD during component design.
+The MVP targets reliability investigation with a high-level fleet overview. Model
+administration, advanced maintenance scheduling, BI/Power BI, assignment, and
+escalation are out of scope. The approved read API's schemas, pagination, errors,
+local access, and health semantics are recorded in [basic-api.md](basic-api.md).
+Public authentication/authorization, future alert/prediction contracts, and
+frontend details remain design decisions for their implementation increments.
 
 ## Deployment and Environments
 
@@ -271,5 +277,6 @@ integration tests; remaining security and component details follow as needed.
 
 The simulator, Kafka ingestion, and app-ready data-access increments have received
 explicit design approval and are implemented. History/latest queries reuse the
-inbox rather than introducing the broader draft historical schema. ML, API, and
-frontend decisions are confirmed as those demo-focused increments begin.
+inbox rather than introducing the broader draft historical schema. The basic API
+design is also approved and implemented. ML, alerts, frontend, and public access
+decisions are confirmed as those demo-focused increments begin.

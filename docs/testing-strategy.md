@@ -140,11 +140,13 @@ The implementation phase should include CI expectations that verify correctness 
 - regression checks for ML and alerting workflows
 
 The implemented ingestion/data-access workflow runs `bash scripts/test-kafka.sh`
-in GitHub Actions. It covers 68 Python unit tests and 10 real-service integration
-tests, including history/pagination, lifecycle replay, migration of populated
-inboxes, Redis recovery/expiry, and durable processing during cache connection
-failure. The C++ producer image retains its 39 CTest checks. The script also
+in GitHub Actions. It covers 90 Python unit tests and 18 real-service integration
+tests, including API response/error contracts, HTTP reads of simulator events,
+health/readiness, concurrent database connection isolation, history/pagination,
+lifecycle replay, migration of populated inboxes, Redis recovery/expiry, and
+durable processing during cache connection failure. The C++ producer image
+retains its 39 CTest checks. The script also
 exercises a broker interruption and cleans only its own test volumes.
-`bash scripts/demo-data.sh` demonstrates the full implemented pipeline and
-history/current-state/cache recovery. Future API/UI/ML tests are added with
-their respective increments.
+`bash scripts/demo-api.sh` demonstrates the full implemented pipeline through
+HTTP, with history/current-state/cache recovery. Future UI/alert/ML tests are
+added with their respective increments.

@@ -308,6 +308,10 @@ TEST-016: Data-access tests shall cover history filtering/pagination, lifecycle
 resets, replay ordering, populated-inbox migrations, Redis expiry/fallback/rebuild,
 and durable ingestion during Redis connection failure.
 
+TEST-017: Basic API tests shall cover response contracts, bounded queries,
+unknown/invalid requests, sanitized errors, migrated-storage readiness, Redis
+fallback, real HTTP reads of simulator events, and concurrent request isolation.
+
 ## 15. Deployment Requirements
 DEPLOY-001: The system shall support a local, reproducible development environment for running the platform without requiring a final production deployment.
 

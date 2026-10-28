@@ -99,5 +99,6 @@ precision), expiry, and offset commits during a real Redis connection failure.
 It uses real Kafka, PostgreSQL, and Redis, cleans up only its own project/volumes,
 and runs in GitHub Actions. Performance targets remain unmeasured.
 
-The next increment is `feat/basic-api`: expose fleet summary, device detail, and
-history through FastAPI, then add the approved alert workflow and dashboard.
+The subsequent `feat/basic-api` increment exposes fleet summary, device detail,
+and history through FastAPI; see [basic-api.md](basic-api.md). Alert processing
+and the dashboard remain upcoming increments.
