@@ -7,11 +7,17 @@ test("fleet renders every API page and all four reported health counts", async (
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Fleet overview", exact: true })).toBeVisible();
   const summary = page.getByRole("region", { name: "Fleet health summary" });
-  await expect(summary).toContainText("Observed devices4");
+  await expect(summary).toContainText("Total devices4");
   for (const state of ["Healthy", "Warning", "Critical", "Failed"]) await expect(summary).toContainText(`${state}1`);
   await expect(page.getByRole("table").getByRole("row")).toHaveCount(5);
   await expect(page.getByRole("link", { name: "Inspect device-004" })).toBeVisible();
   await expect(page.getByText("Simulated data", { exact: true })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Errors", exact: true })).toBeVisible();
+  const rows = page.getByRole("table").getByRole("row");
+  for (let index = 0; index < 4; index++) {
+    await expect(rows.nth(index + 1).getByRole("cell").nth(5)).toHaveText(String(index));
+  }
+  await expect(page.getByText("Health states are reported by the simulator.", { exact: false })).toBeVisible();
 });
 
 test("selecting a device loads metadata, latest values, four charts and back navigation", async ({ page }) => {
@@ -59,7 +65,37 @@ test("an empty fleet has an honest empty state", async ({ page, request }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "No devices yet" })).toBeVisible();
   await expect(page.getByRole("table")).toHaveCount(0);
-  await expect(page.getByRole("region", { name: "Fleet health summary" })).toContainText("Observed devices0");
+  await expect(page.getByRole("region", { name: "Fleet health summary" })).toContainText("Total devices0");
+});
+
+test("the full device row opens detail, including native new-tab behavior", async ({ page, context }) => {
+  await page.goto("/");
+  const row = page.getByRole("row").filter({ has: page.getByRole("link", { name: "Inspect device-004" }) });
+  await expect(row.getByText("View details")).toBeVisible();
+  const errorCell = row.getByRole("cell").nth(5);
+  const box = await errorCell.boundingBox();
+  expect(box).not.toBeNull();
+  const popupPromise = context.waitForEvent("page");
+  // Use coordinates so this specifically hits the row surface, not the ID link text.
+  await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2, { button: "middle" });
+  const popup = await popupPromise;
+  await expect(popup).toHaveURL(/\/devices\/device-004$/);
+  await expect(popup.getByRole("heading", { name: "device-004", level: 1 })).toBeVisible();
+  await popup.close();
+  await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  await expect(page.getByRole("heading", { name: "device-004", level: 1 })).toBeVisible();
+});
+
+test("the desktop fleet footer follows the content without a forced viewport gap", async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1200 });
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "Inspect device-004" })).toBeVisible();
+  const note = await page.locator(".data-note").boundingBox();
+  const footer = await page.getByRole("contentinfo").boundingBox();
+  expect(note).not.toBeNull();
+  expect(footer).not.toBeNull();
+  expect(footer!.y - (note!.y + note!.height)).toBeLessThanOrEqual(48);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
 });
 
 test("API failure offers a retry that recovers without fixture fallback", async ({ page, request }) => {

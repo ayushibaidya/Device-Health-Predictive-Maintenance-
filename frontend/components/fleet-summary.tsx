@@ -13,7 +13,7 @@ export async function FleetSummary() {
     </ViewState></div>;
   }
   return <section aria-label="Fleet health summary" className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-    <div className="summary-card total-card"><p>Observed devices</p><strong>{number(summary.total_devices, 0)}</strong><span>Across the fleet</span></div>
+    <div className="summary-card total-card"><p>Total devices</p><strong>{number(summary.total_devices, 0)}</strong><span>Across the fleet</span></div>
     {HEALTH_STATES.map(state => <div className={`summary-card summary-${state.toLowerCase()}`} key={state}>
       <p><span className="status-dot" aria-hidden="true" />{stateLabel(state)}</p>
       <strong>{number(summary.by_state[state], 0)}</strong><span>Devices</span>

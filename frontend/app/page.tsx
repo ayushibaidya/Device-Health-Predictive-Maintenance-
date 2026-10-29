@@ -19,7 +19,7 @@ async function Devices() {
 }
 
 export default function FleetPage() {
-  return <div className="page-stack">
+  return <div className="page-stack fleet-overview">
     <div className="page-heading"><div><p className="eyebrow">Device monitoring</p>
       <h1>Fleet overview</h1><p className="page-description">A clear view of device health. Select a device to investigate.</p>
     </div><RefreshButton /></div>
