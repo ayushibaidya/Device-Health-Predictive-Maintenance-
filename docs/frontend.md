@@ -40,8 +40,13 @@ single-command demo and does not require changing your global Node installation.
 
 ## Screens and data access
 
-`/` renders total devices and the four backend health counts, plus a selectable
-device table. It follows `next_after_device` to retrieve all device pages. A
+`/` renders Total devices and the four backend health counts, plus a device table
+including the existing `error_count`. Each row is a native full-surface link with
+a View details cue and hover/focus highlighting; keyboard navigation and browser
+open-in-new-tab behavior are preserved. Desktop fleet spacing follows content
+without forcing the footer down to the viewport edge. The fleet response has one
+reading per device, so sparklines are omitted rather than adding per-device
+history requests. The view follows `next_after_device` to retrieve all device pages. A
 failed summary does not hide successfully loaded device rows; a failed device
 page prevents presenting an incomplete fleet as the full list.
 
@@ -93,7 +98,7 @@ bash scripts/test-dashboard.sh
 ```
 
 The isolated Docker check runs TypeScript validation, lint, a production build,
-four chart-data unit tests, and 16 browser cases using a local test-only API.
+four chart-data unit tests, and 18 browser cases using a local test-only API.
 It then starts a separate Kafka/PostgreSQL/Redis/FastAPI stack, publishes real C++
 events, and runs a fleet → device → history browser smoke test. Only the test
 project's containers and volumes are removed. Default isolated ports are 39092,
@@ -102,11 +107,13 @@ project's containers and volumes are removed. Default isolated ports are 39092,
 Browser cases cover rendering, all-page fleet traversal, device navigation,
 history navigation, loading, empty/error/404 states, refresh, optional metrics,
 partial failures, keyboard interactions, and desktop/laptop/narrow layouts.
+Fleet refinements also cover whole-row and middle-click navigation, reported
+error counts, and content-driven desktop spacing.
 GitHub Actions is configured to run the same script. The initial browser target
 is Chromium; other engines and large-fleet benchmarks remain future checks.
 
 Local verification on October 28, 2026 passed: TypeScript, lint, production
-build, four chart-data unit tests, all 16 fixture browser cases, and the separate
+build, four chart-data unit tests, all 18 fixture browser cases, and the separate
 real-pipeline browser test. The one-command dashboard demo also passed. Native
 Apple Silicon Chromium and Docker/Linux ARM64 were exercised; remote CI awaits
 the owner's push and pull request.

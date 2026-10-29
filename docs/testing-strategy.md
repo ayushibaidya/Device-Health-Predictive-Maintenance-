@@ -154,7 +154,7 @@ added with their respective increments.
 ## Implemented Frontend Verification
 
 `bash scripts/test-dashboard.sh` builds the pinned Next.js application and runs
-TypeScript, lint, four Node chart-data unit tests, and 16 Chromium browser cases.
+TypeScript, lint, four Node chart-data unit tests, and 18 Chromium browser cases.
 Test-only HTTP fixtures provide deterministic loading, empty, failure, pagination,
 and rendering scenarios. A separate browser smoke test uses real C++ events
 through Kafka, validation, PostgreSQL/Redis and FastAPI: fleet → device → history.

@@ -61,8 +61,13 @@ docs/frontend.md
 | `/` | `GET /api/v1/fleet/summary`, `GET /api/v1/devices` with `after_device` pagination |
 | `/devices/[deviceId]` | `GET /api/v1/devices/{device_id}`, `GET /api/v1/devices/{device_id}/telemetry` with `limit` and optional `before` |
 
-Fleet: total plus four health counts, followed by a device table with selectable
-device ID, state, firmware, temperature, CPU utilization, and simulation timestamp.
+Fleet: a Total devices card plus the four health counts, followed by a device
+table with device ID, state, firmware, temperature, CPU utilization, error count,
+and simulation timestamp. Each row uses a native link covering its surface, a
+View details cue, and pointer/keyboard-focus highlighting. Desktop fleet spacing
+is content-driven, without a forced viewport-height gap before the footer.
+The fleet payload contains only latest readings, so fleet sparklines are omitted;
+history remains available on the device page without additional fleet requests.
 Follow `next_after_device` until exhausted to display all observed devices, rather
 than silently stopping at the first API page. Preserve available device rows if
 the separate summary request fails, showing an error in the summary region.
