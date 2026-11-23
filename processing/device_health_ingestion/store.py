@@ -4,6 +4,8 @@ import psycopg
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 from psycopg.types.json import Jsonb
 
+from device_health_alerts.evaluator import evaluate, lock_device
+
 from .errors import PermanentProcessingError, TransientProcessingError
 
 
@@ -48,12 +50,13 @@ class PostgresInbox(PostgresConnection):
         try:
             connection = self._connect()
             with connection.transaction():
+                progress = lock_device(connection, event["device_id"])
                 inserted = connection.execute(
                     """INSERT INTO telemetry_inbox
                        (event_id, run_id, device_id, event_time, payload,
                         source_topic, source_partition, source_offset)
                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                       ON CONFLICT (event_id) DO NOTHING RETURNING event_id""",
+                       ON CONFLICT (event_id) DO NOTHING RETURNING ingestion_order""",
                     (
                         event["event_id"],
                         event["run_id"],
@@ -74,6 +77,8 @@ class PostgresInbox(PostgresConnection):
                         raise PermanentProcessingError(
                             "event_id conflicts with an existing payload"
                         )
+                else:
+                    evaluate(connection, event, inserted[0], progress)
             return inserted is not None
         except (
             psycopg.OperationalError,

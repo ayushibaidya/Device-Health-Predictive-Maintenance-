@@ -9,6 +9,7 @@ import pytest
 from confluent_kafka import TopicPartition
 from psycopg import sql
 from psycopg.conninfo import make_conninfo
+from psycopg.types.json import Jsonb
 
 from device_health_ingestion.core import Processor, Record
 from device_health_ingestion.latest import CacheUnavailable, LatestState, RedisLatest
@@ -164,14 +165,25 @@ def test_migration_preserves_existing_inbox_and_is_repeatable(event):
         try:
             with psycopg.connect(dsn) as connection:
                 connection.execute((Path("migrations") / "001_telemetry_inbox.sql").read_text())
-            inbox = PostgresInbox(dsn)
-            try:
-                assert accept(inbox, event, 10)
-                newer = dict(event, event_id=str(uuid.uuid4()), temperature_c=77)
-                assert accept(inbox, newer, 11)
-            finally:
-                inbox.close()
-            assert len(migrate(dsn)) == 2
+            newer = dict(event, event_id=str(uuid.uuid4()), temperature_c=77)
+            # Seed the legacy schema before the new inbox requires alert tables.
+            with psycopg.connect(dsn) as connection:
+                for offset, reading in enumerate((event, newer)):
+                    connection.execute(
+                        """INSERT INTO telemetry_inbox
+                           (event_id, run_id, device_id, event_time, payload,
+                            source_topic, source_partition, source_offset)
+                           VALUES (%s,%s,%s,%s,%s,'device.telemetry.v1',0,%s)""",
+                        (
+                            reading["event_id"],
+                            reading["run_id"],
+                            reading["device_id"],
+                            reading["timestamp"],
+                            Jsonb(reading),
+                            offset,
+                        ),
+                    )
+            assert len(migrate(dsn)) == 3
             assert migrate(dsn) == []
             queries = TelemetryQueries(dsn)
             try:

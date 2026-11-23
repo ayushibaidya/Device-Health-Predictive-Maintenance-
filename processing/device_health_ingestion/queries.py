@@ -68,11 +68,13 @@ class TelemetryQueries(PostgresConnection):
         try:
             # Verify readable columns as well as migration bookkeeping. No writes.
             self._read("SELECT event_id, ingestion_order FROM telemetry_inbox LIMIT 0", ())
+            self._read("SELECT alert_id, status FROM alerts LIMIT 0", ())
+            self._read("SELECT last_ingestion_order FROM alert_evaluation_state LIMIT 0", ())
             rows = self._read(
                 "SELECT name FROM schema_migrations WHERE name = ANY(%s)",
-                (["001_telemetry_inbox.sql", "002_data_access.sql"],),
+                (["001_telemetry_inbox.sql", "002_data_access.sql", "003_simulator_alerts.sql"],),
             )
-            return len(rows) == 2
+            return len(rows) == 3
         except psycopg.Error:
             return False
 

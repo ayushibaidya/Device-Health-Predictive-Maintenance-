@@ -1,5 +1,6 @@
 """HTTP response contracts, preserving the accepted telemetry event shape."""
 
+from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
@@ -75,3 +76,40 @@ class ErrorBody(BaseModel):
 
 class ErrorResponse(BaseModel):
     error: ErrorBody
+
+
+AlertStatus = Literal["ACTIVE", "ACKNOWLEDGED", "RESOLVED"]
+AlertSeverity = Literal["WARNING", "CRITICAL", "FAILURE"]
+
+
+class Alert(BaseModel):
+    alert_id: UUID
+    alert_order: int = Field(gt=0)
+    device_id: str
+    run_id: UUID
+    rule_id: str
+    source: Literal["simulator"]
+    severity: AlertSeverity
+    status: AlertStatus
+    message: str
+    opening_event_id: UUID
+    last_event_id: UUID
+    resolved_event_id: UUID | None
+    opened_event_time: datetime
+    last_event_time: datetime
+    resolved_event_time: datetime | None
+    created_at: datetime
+    updated_at: datetime
+    acknowledged_at: datetime | None
+    resolved_at: datetime | None
+    resolution_reason: Literal["recovered", "superseded", "lifecycle_changed"] | None
+
+
+class AlertDetail(Alert):
+    data_mode: Literal["simulated"]
+
+
+class AlertPage(BaseModel):
+    data_mode: Literal["simulated"]
+    items: list[Alert]
+    next_before: int | None

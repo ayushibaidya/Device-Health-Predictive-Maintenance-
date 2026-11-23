@@ -5,6 +5,8 @@ import sys
 
 import psycopg
 
+from device_health_alerts.evaluator import backfill
+
 from .store import database_dsn
 
 
@@ -21,6 +23,8 @@ def migrate(dsn, directory=None):
             ).fetchone():
                 continue
             connection.execute(path.read_text())
+            if path.name == "003_simulator_alerts.sql":
+                backfill(connection)
             connection.execute("INSERT INTO schema_migrations (name) VALUES (%s)", (path.name,))
             applied.append(path.name)
     return applied

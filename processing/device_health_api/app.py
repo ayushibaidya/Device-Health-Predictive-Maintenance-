@@ -12,12 +12,17 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from device_health_alerts.store import AlertNotFound, AlertQueries, AlertResolved
 from device_health_ingestion.errors import TransientProcessingError
 from device_health_ingestion.latest import LatestState, configured_cache
 from device_health_ingestion.queries import TelemetryQueries, time_bound
 from device_health_ingestion.store import database_dsn
 
 from .models import (
+    AlertDetail,
+    AlertPage,
+    AlertSeverity,
+    AlertStatus,
     DeviceDetail,
     DevicePage,
     ErrorResponse,
@@ -42,12 +47,29 @@ def get_queries(request: Request):
 Queries = Annotated[TelemetryQueries, Depends(get_queries)]
 
 
+def get_alert_queries(request: Request):
+    queries = request.app.state.alert_queries_factory(request.app.state.dsn)
+    try:
+        yield queries
+    finally:
+        queries.close()
+
+
+Alerts = Annotated[AlertQueries, Depends(get_alert_queries)]
+
+
 def error_response(status, code, message):
     body = ErrorResponse(error={"code": code, "message": message})
     return JSONResponse(status_code=status, content=body.model_dump())
 
 
-def create_app(*, dsn=None, cache_factory=configured_cache, queries_factory=TelemetryQueries):
+def create_app(
+    *,
+    dsn=None,
+    cache_factory=configured_cache,
+    queries_factory=TelemetryQueries,
+    alert_queries_factory=AlertQueries,
+):
     @asynccontextmanager
     async def lifespan(app):
         try:
@@ -56,6 +78,7 @@ def create_app(*, dsn=None, cache_factory=configured_cache, queries_factory=Tele
         except ValueError:
             raise RuntimeError("Invalid data-store configuration") from None
         app.state.queries_factory = queries_factory
+        app.state.alert_queries_factory = alert_queries_factory
         try:
             yield
         finally:
@@ -66,8 +89,8 @@ def create_app(*, dsn=None, cache_factory=configured_cache, queries_factory=Tele
         title="Device Health API",
         version="1.0.0",
         lifespan=lifespan,
-        description="Read-only access to simulated device data. Local development API.",
-        responses={status: {"model": ErrorResponse} for status in (404, 422, 500, 503)},
+        description="Simulated device data and alert acknowledgement. Local development API.",
+        responses={status: {"model": ErrorResponse} for status in (404, 409, 422, 500, 503)},
     )
 
     @app.middleware("http")
@@ -104,6 +127,14 @@ def create_app(*, dsn=None, cache_factory=configured_cache, queries_factory=Tele
     @app.exception_handler(TransientProcessingError)
     async def storage_unavailable(_, __):
         return error_response(503, "service_unavailable", "Durable storage is unavailable.")
+
+    @app.exception_handler(AlertNotFound)
+    async def alert_not_found(_, __):
+        return error_response(404, "not_found", "The requested resource was not found.")
+
+    @app.exception_handler(AlertResolved)
+    async def alert_resolved(_, __):
+        return error_response(409, "alert_resolved", "Resolved alerts cannot be acknowledged.")
 
     @app.get("/health/live", response_model=Liveness, tags=["Health"])
     def live():
@@ -196,5 +227,50 @@ def create_app(*, dsn=None, cache_factory=configured_cache, queries_factory=Tele
             before=before,
         )
         return {"data_mode": "simulated", **page}
+
+    @app.get(prefix + "/alerts", response_model=AlertPage, tags=["Alerts"])
+    def alerts(
+        queries: Alerts,
+        device_id: Annotated[str | None, Query(min_length=1, pattern=r"^[^\x00]+$")] = None,
+        status: Annotated[list[AlertStatus] | None, Query()] = None,
+        severity: AlertSeverity | None = None,
+        limit: PageLimit = 100,
+        before: Annotated[int | None, Query(gt=0)] = None,
+    ):
+        return {
+            "data_mode": "simulated",
+            **queries.page(
+                device_id=device_id, statuses=status, severity=severity, limit=limit, before=before
+            ),
+        }
+
+    @app.get(prefix + "/devices/{device_id}/alerts", response_model=AlertPage, tags=["Alerts"])
+    def device_alerts(
+        device_id: DeviceId,
+        queries: Queries,
+        alert_queries: Alerts,
+        status: Annotated[list[AlertStatus] | None, Query()] = None,
+        severity: AlertSeverity | None = None,
+        limit: PageLimit = 100,
+        before: Annotated[int | None, Query(gt=0)] = None,
+    ):
+        if queries.latest(device_id) is None:
+            raise HTTPException(404)
+        return {
+            "data_mode": "simulated",
+            **alert_queries.page(
+                device_id=device_id, statuses=status, severity=severity, limit=limit, before=before
+            ),
+        }
+
+    @app.get(prefix + "/alerts/{alert_id}", response_model=AlertDetail, tags=["Alerts"])
+    def alert(alert_id: UUID, queries: Alerts):
+        return {"data_mode": "simulated", **queries.get(alert_id)}
+
+    @app.post(
+        prefix + "/alerts/{alert_id}/acknowledge", response_model=AlertDetail, tags=["Alerts"]
+    )
+    def acknowledge(alert_id: UUID, queries: Alerts):
+        return {"data_mode": "simulated", **queries.acknowledge(alert_id)}
 
     return app
