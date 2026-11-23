@@ -3,6 +3,7 @@ import { getDevices } from "@/lib/api.server";
 import { FleetSummary } from "@/components/fleet-summary";
 import { DeviceTable } from "@/components/device-table";
 import { RefreshButton } from "@/components/refresh-button";
+import { RecentAlerts } from "@/components/recent-alerts";
 import { SummarySkeleton, TableSkeleton, ViewState } from "@/components/view-state";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,7 @@ export default function FleetPage() {
     </div><RefreshButton /></div>
     <Suspense fallback={<SummarySkeleton />}><FleetSummary /></Suspense>
     <Suspense fallback={<TableSkeleton />}><Devices /></Suspense>
+    <Suspense fallback={<TableSkeleton label="Loading alerts" />}><RecentAlerts /></Suspense>
     <p className="data-note"><span aria-hidden="true">ⓘ</span> Health states are reported by the simulator. Simulation timestamps do not indicate wall-clock device freshness.</p>
   </div>;
 }

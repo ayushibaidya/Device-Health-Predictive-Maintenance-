@@ -3,10 +3,28 @@ import { createServer } from "node:http";
 import { setTimeout } from "node:timers/promises";
 
 let scenario = "default";
+let alerts = [];
 const states = ["HEALTHY", "WARNING", "CRITICAL", "FAILED"];
 const runA = "11111111-1111-4111-8111-111111111111";
 const runB = "22222222-2222-4222-8222-222222222222";
 const deviceIds = ["device-001", "device-002", "device-003", "device-004"];
+
+function episodes() {
+  return [ ["device-002", "WARNING", "ACTIVE"], ["device-002", "WARNING", "ACKNOWLEDGED"],
+    ["device-003", "CRITICAL", "ACTIVE"], ["device-002", "WARNING", "RESOLVED"],
+    ["device-004", "FAILURE", "RESOLVED"] ].map(([device_id, severity, status], index) => ({
+      alert_id: `aaaaaaaa-aaaa-4aaa-8aaa-${String(index + 1).padStart(12, "0")}`,
+      alert_order: 5 - index, device_id, run_id: runA, rule_id: "simulator_state_v1", source: "simulator",
+      severity, status, message: `Simulator reported ${severity === "FAILURE" ? "FAILED" : severity}.`,
+      opening_event_id: runA, last_event_id: runB, resolved_event_id: status === "RESOLVED" ? runB : null,
+      opened_event_time: "2026-01-01T00:00:05Z", last_event_time: "2026-01-01T00:00:10Z",
+      resolved_event_time: status === "RESOLVED" ? "2026-01-01T00:00:10Z" : null,
+      created_at: "2026-10-29T12:00:00Z", updated_at: "2026-10-29T12:01:00Z",
+      acknowledged_at: status === "ACKNOWLEDGED" ? "2026-10-29T12:01:00Z" : null,
+      resolved_at: status === "RESOLVED" ? "2026-10-29T12:02:00Z" : null,
+      resolution_reason: status === "RESOLVED" ? "recovered" : null,
+    }));
+}
 
 function reading(deviceId, index) {
   const device = deviceIds.indexOf(deviceId);
@@ -36,10 +54,41 @@ createServer(async (request, response) => {
   if (url.pathname === "/") return send(response, 200, { ready: true });
   if (request.method === "POST" && url.pathname.startsWith("/__test__/scenario/")) {
     scenario = url.pathname.split("/").pop();
+    alerts = scenario.startsWith("alerts") ? episodes() : [];
+    if (scenario === "alerts-conflict-single") alerts = alerts.slice(0, 1);
     return send(response, 200, { scenario });
   }
   if (scenario === "delay") await setTimeout(2500);
   if (scenario === "api-error") return error(response, 503);
+  const alertRoute = /^\/api\/v1\/(?:alerts|devices\/([^/]+)\/alerts)$/.exec(url.pathname);
+  if (alertRoute) {
+    if (scenario === "alerts-error") return error(response, 503);
+    if (scenario === "alerts-delay") await setTimeout(2500);
+    const device = alertRoute[1] ? decodeURIComponent(alertRoute[1]) : url.searchParams.get("device_id");
+    if (alertRoute[1] && !deviceIds.includes(device)) return error(response, 404);
+    const statuses = url.searchParams.getAll("status");
+    const severity = url.searchParams.get("severity");
+    const before = Number(url.searchParams.get("before") ?? Infinity);
+    const rows = alerts.filter(alert => (!device || alert.device_id === device) &&
+      (!statuses.length || statuses.includes(alert.status)) && (!severity || alert.severity === severity) && alert.alert_order < before);
+    const limit = Math.min(Number(url.searchParams.get("limit") ?? 100), 2);
+    return send(response, 200, { data_mode: "simulated", items: rows.slice(0, limit),
+      next_before: rows.length > limit ? rows[limit - 1].alert_order : null });
+  }
+  const acknowledge = /^\/api\/v1\/alerts\/([^/]+)\/acknowledge$/.exec(url.pathname);
+  if (acknowledge && request.method === "POST") {
+    await setTimeout(700);
+    if (scenario === "alerts-ack-error") return error(response, 503);
+    const alert = alerts.find(item => item.alert_id === acknowledge[1]);
+    if (!alert) return error(response, 404);
+    if (scenario.startsWith("alerts-conflict")) {
+      Object.assign(alert, { status: "RESOLVED", resolved_event_id: runB,
+        resolved_event_time: alert.last_event_time, resolved_at: "2026-10-29T12:02:00Z", resolution_reason: "recovered" });
+    }
+    if (alert.status === "RESOLVED") return send(response, 409, { error: { code: "alert_resolved", message: "Resolved" } });
+    if (alert.status === "ACTIVE") Object.assign(alert, { status: "ACKNOWLEDGED", acknowledged_at: "2026-10-29T12:03:00Z" });
+    return send(response, 200, { data_mode: "simulated", ...alert });
+  }
   if (url.pathname === "/api/v1/fleet/summary") {
     if (scenario === "summary-error") return error(response, 503);
     return send(response, 200, { data_mode: "simulated", total_devices: scenario === "empty" ? 0 : 4,

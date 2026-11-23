@@ -4,6 +4,7 @@ import { ApiError, getDevice } from "@/lib/api.server";
 import { DeviceHeader } from "@/components/device-header";
 import { TelemetryValues } from "@/components/telemetry-values";
 import { TelemetryHistory } from "@/components/telemetry-history";
+import { RecentAlerts } from "@/components/recent-alerts";
 import { TableSkeleton, ViewState } from "@/components/view-state";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,7 @@ export default async function DevicePage({ params, searchParams }: {
   return <div className="page-stack">
     <DeviceHeader reading={reading} />
     <TelemetryValues event={reading.event} />
+    <Suspense fallback={<TableSkeleton label="Loading alerts" />}><RecentAlerts deviceId={deviceId} /></Suspense>
     <Suspense key={`${deviceId}:${before ?? "latest"}`} fallback={<TableSkeleton label="Loading telemetry history" />}>
       <TelemetryHistory deviceId={deviceId} before={before} />
     </Suspense>

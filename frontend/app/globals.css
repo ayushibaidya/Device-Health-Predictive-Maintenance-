@@ -22,7 +22,9 @@ h3 { font-size: 14px; font-weight: 650; }
 .brand-mark { background: #192d49; color: #e4efff; width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; }
 .brand-subtitle { display: block; font-size: 11px; color: var(--muted); font-weight: 450; letter-spacing: .03em; }
 .header-right { display: flex; align-items: center; gap: 28px; }
-.nav-link { font-size: 12px; font-weight: 600; border-bottom: 2px solid var(--ink); padding: 10px 0; }
+.main-nav { display: flex; gap: 22px; }
+.nav-link { font-size: 12px; font-weight: 600; border-bottom: 2px solid transparent; padding: 10px 0; color: var(--muted); }
+.nav-link[aria-current] { border-color: var(--ink); color: var(--ink); }
 .simulation-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; border: 1px solid #dbe3ee; background: #f7f9fc; color: #52657f; padding: 5px 9px; border-radius: 5px; white-space: nowrap; }
 .simulation-badge > span { width: 5px; height: 5px; background: #6e86a8; border-radius: 100%; }
 .app-main { max-width: 1440px; margin: auto; padding: 38px 40px 48px; min-height: calc(100vh - 158px); }
@@ -106,6 +108,27 @@ tbody tr:hover { background: #fafcff; }
 .skeleton { background: #e9eef5; border-radius: 4px; }
 .skip-link { position: absolute; left: 16px; top: -80px; background: white; padding: 12px; z-index: 20; }
 .skip-link:focus { top: 16px; }
+.alert-list { list-style: none; margin: 0; padding: 0; }
+.alert-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; padding: 20px 24px; border-top: 1px solid var(--line); }
+.alert-content { min-width: 0; }
+.alert-title { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.alert-message { font-size: 12px; margin-top: 9px; color: #52657f; }
+.alert-status { font-size: 10px; color: #65758d; }
+.alert-status-active { color: #334b6f; font-weight: 650; }
+.alert-evidence { display: flex; flex-wrap: wrap; gap: 12px 28px; margin-top: 12px; }
+.alert-evidence dt { color: var(--muted); font-size: 10px; }
+.alert-evidence dd { color: #40516a; font-size: 11px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.alert-empty { color: var(--muted); padding: 0 24px 20px; font-size: 12px; }
+.alert-feedback { padding: 12px 24px; color: #40516a; font-size: 12px; border-top: 1px solid var(--line); }
+.alert-feedback[role=alert] { color: #a22b44; }
+.ack-control { flex-shrink: 0; max-width: 230px; }
+.alert-toolbar { display: flex; justify-content: space-between; gap: 20px; align-items: flex-end; flex-wrap: wrap; }
+.alert-tabs { display: flex; gap: 4px; border: 1px solid var(--line); border-radius: 7px; padding: 4px; background: white; }
+.alert-tabs a { padding: 6px 14px; font-size: 12px; border-radius: 4px; color: var(--muted); }
+.alert-tabs a[aria-current] { background: #edf3ff; color: #213d64; font-weight: 650; }
+.alert-filters { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.alert-filters label { display: grid; gap: 5px; font-size: 11px; color: var(--muted); }
+.alert-filters input, .alert-filters select { font: inherit; color: var(--ink); background: white; border: 1px solid #d8e0eb; border-radius: 6px; padding: 8px 10px; min-height: 38px; max-width: 100%; }
 @media (min-width: 1024px) {
   .app-main:has(.fleet-overview) { padding-block: 28px; min-height: 0; }
   .fleet-overview { gap: 20px; }
@@ -118,11 +141,12 @@ tbody tr:hover { background: #fafcff; }
 }
 @media (max-width: 1024px) { .device-metadata { grid-template-columns: 1fr 1.8fr; } }
 @media (max-width: 640px) {
-  .header-inner { padding: 17px 20px; gap: 10px; }.header-right { gap: 10px; }.nav-link { display: none; }
+  .header-inner { padding: 17px 20px; gap: 10px; flex-wrap: wrap; }.header-right { gap: 16px; }.main-nav { gap: 16px; }
   .brand { font-size: 14px; }.brand-mark { width: 34px; height: 34px; }.brand-subtitle { font-size: 10px; }
   .app-main { padding: 26px 20px 36px; }.app-footer { padding: 18px 20px; flex-direction: column; gap: 4px; }
   .page-heading { align-items: flex-start; gap: 12px; }.page-heading > .button { margin-top: 25px; }
   .summary-card { padding: 15px; }.total-card { grid-column: span 2; }.section-heading { padding: 18px; align-items: flex-start; flex-direction: column; gap: 8px; }
   .device-metadata { grid-template-columns: 1fr; padding: 20px; gap: 18px; }.metric-card { padding: 16px; }
   .chart-card { padding: 18px 14px 10px; }.pagination { align-items: flex-start; flex-direction: column; }
+  .alert-row { flex-direction: column; padding: 18px; gap: 14px; }.alert-filters { width: 100%; }.ack-control { max-width: 100%; }
 }

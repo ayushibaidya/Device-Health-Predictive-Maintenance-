@@ -15,8 +15,9 @@ export default defineConfig({
   reporter: [["list"]],
   use: { baseURL: external ?? local, trace: "retain-on-failure", screenshot: "only-on-failure" },
   projects: [
-    { name: "fixtures", testMatch: "dashboard.spec.ts", use: { ...devices["Desktop Chrome"] } },
+    { name: "fixtures", testMatch: ["dashboard.spec.ts", "alerts.spec.ts"], use: { ...devices["Desktop Chrome"] } },
     { name: "real-api", testMatch: "real-api.spec.ts", use: { ...devices["Desktop Chrome"] } },
+    { name: "real-alerts", testMatch: "alerts-real.spec.ts", use: { ...devices["Desktop Chrome"] } },
   ],
   webServer: external ? undefined : [
     ...(!real ? [{ command: "node tests/fixtures/api-server.mjs", url: fixture, reuseExistingServer: false }] : []),

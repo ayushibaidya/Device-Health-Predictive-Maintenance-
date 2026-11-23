@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { MainNav } from "@/components/main-nav";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <path d="M8 12h2l1.5-3 2 6 1.5-3h1M9 2v3m6-3v3M9 19v3m6-3v3M2 9h3m-3 6h3m14-6h3m-3 6h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
         </svg></span><span>Device Health<span className="brand-subtitle">Fleet monitoring</span></span>
       </Link>
-      <div className="header-right"><Link href="/" className="nav-link">Fleet overview</Link>
+      <div className="header-right"><MainNav />
         <span className="simulation-badge"><span aria-hidden="true" />Simulated data</span></div>
     </div></header>
     <main id="main-content" className="app-main">{children}</main>
