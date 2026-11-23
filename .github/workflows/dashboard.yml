@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   frontend:
-    name: Next.js / browser / real API
+    name: Next.js / browser / real API / alert acknowledgement
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:

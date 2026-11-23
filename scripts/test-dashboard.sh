@@ -25,4 +25,13 @@ docker compose run --rm --no-deps -T tests python demo.py
 docker compose up -d --no-deps --wait frontend
 docker compose run --rm --no-deps -T -e DASHBOARD_EXTERNAL_URL=http://frontend:3000 \
     frontend-tests npm run test:real
+# A longer run exercises all simulator health states and recovery, using only this test stack.
+docker compose run --rm --no-deps -T producer --output kafka --steps 1200 \
+    > "$KAFKA_FIXTURE_DIR/producer-events.jsonl"
+docker compose run --rm --no-deps -T tests python demo.py > "$KAFKA_FIXTURE_DIR/alerts-ingestion.log"
+tail -n 1 "$KAFKA_FIXTURE_DIR/alerts-ingestion.log"
+docker compose run --rm --no-deps -T tests python demo_alerts.py
+docker compose run --rm --no-deps -T -e DASHBOARD_EXTERNAL_URL=http://frontend:3000 \
+    -e DASHBOARD_TEST_MODE=real frontend-tests npx playwright test --project=real-alerts
+docker compose run --rm --no-deps -T tests python demo_alerts.py --acknowledge
 printf 'Dashboard checks passed, including the real simulator-to-browser flow.\n'
