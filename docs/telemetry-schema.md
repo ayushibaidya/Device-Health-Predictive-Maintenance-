@@ -3,7 +3,8 @@
 Status: Kafka identity fields and the narrow PostgreSQL ingestion inbox were
 approved October 27, 2026 and are implemented. Approved app-ready data access
 adds indexed queries and recoverable latest state to that inbox. Broader
-historical PostgreSQL tables remain a design draft.
+historical PostgreSQL tables remain a design draft. Simulator-state `alerts` and
+`alert_evaluation_state` were approved October 29, 2026 and are implemented.
 
 This document defines the initial schema contract for the simulator → Kafka message path and the durable PostgreSQL tables needed for the MVP. It is intentionally a design artifact and not implementation code.
 
@@ -36,7 +37,7 @@ The simulator publishes one telemetry event per device sample. This is the canon
 | cpu_utilization_pct | float | Yes | Percent |
 | memory_utilization_pct | float | Yes | Percent |
 | timing_jitter_ms | float | Yes | Milliseconds |
-| error_count | integer | Yes | Count of errors since previous sample or window |
+| error_count | integer | Yes | Synthetic per-sample value derived from degradation; currently 0–10 and may decrease during recovery. No cumulative/windowed aggregation is implemented. |
 | device_state | enum | Yes | HEALTHY, WARNING, CRITICAL, FAILED |
 | actuator_load_pct | float | No | Nullable when not applicable |
 | position_error_mm | float | No | Nullable when not applicable |
@@ -83,6 +84,12 @@ before offset commits. [002_data_access.sql](../processing/migrations/002_data_a
 adds a durable accepted-event order and history/latest query indexes. See
 [persistence.md](persistence.md) for lifecycle ordering, pagination, and cache
 recovery. The broader historical tables below are still drafts.
+
+[003_simulator_alerts.sql](../processing/migrations/003_simulator_alerts.sql)
+adds alert episodes and durable rule progress. Its Python migration hook backfills
+existing inbox history atomically using the live evaluator. See [alerts.md](alerts.md).
+Only section 3.5 below describes implemented application tables; the remaining
+broader tables are still drafts.
 
 ### 3.0 Schema decision summary
 
@@ -163,21 +170,44 @@ Purpose: durable ML result history.
 | observation_window_minutes | integer | NOT NULL | Example: 5 |
 | created_at | timestamptz | NOT NULL | Record creation time |
 
-### 3.5 alerts
+### 3.5 alerts (implemented)
 
 Purpose: durable alert lifecycle and acknowledgement state.
 
 | Column | Type | Constraints | Notes |
 | --- | --- | --- | --- |
-| alert_id | uuid | PK | Unique alert id |
-| device_id | varchar | FK -> devices.device_id | Affected device |
-| severity | varchar | NOT NULL | WARNING, CRITICAL, FAILURE |
-| status | varchar | NOT NULL | ACTIVE, ACKNOWLEDGED, RESOLVED |
-| source | varchar | NOT NULL | simulator, ml, rule-based |
-| created_at | timestamptz | NOT NULL | Alert creation time |
-| acknowledged_at | timestamptz | NULL | When user acknowledged it |
-| resolved_at | timestamptz | NULL | When resolved |
-| message | text | NOT NULL | Human-readable alert summary |
+| alert_id | uuid | PK | Deterministic v5 from rule/opening event |
+| alert_order | bigint identity | UNIQUE, NOT NULL | Creation-order cursor |
+| device_id | text | NOT NULL, nonempty | Inbox identity; no draft devices registry FK |
+| run_id | uuid | NOT NULL | Opening lifecycle |
+| rule_id | text | NOT NULL, nonempty | simulator_state_v1 |
+| source | text | NOT NULL | simulator only |
+| severity | text | NOT NULL | WARNING, CRITICAL, FAILURE |
+| status | text | NOT NULL | ACTIVE, ACKNOWLEDGED, RESOLVED |
+| message | text | NOT NULL | Simulator-reported condition |
+| opening_event_id, last_event_id | uuid | NOT NULL, FK inbox | Evidence; deletion restricted |
+| resolved_event_id | uuid | NULL, FK inbox | Closing evidence; deletion restricted |
+| opened_event_time, last_event_time | timestamptz | NOT NULL | Simulation times |
+| resolved_event_time | timestamptz | NULL | Closing simulation time |
+| created_at, updated_at | timestamptz | NOT NULL | PostgreSQL wall clock |
+| acknowledged_at, resolved_at | timestamptz | NULL | Wall clock, no actor identity |
+| resolution_reason | text | NULL | recovered, superseded, lifecycle_changed |
+
+`run_id` identifies the opening lifecycle. Resolution records the closing event
+in both `last_event_id`/`last_event_time` and the `resolved_event_*` fields.
+For `lifecycle_changed`, that closing event may belong to the new lifecycle;
+the alert retains its original `run_id`. Evidence foreign keys reference inbox
+events and do not enforce a same-run relationship. Simulation clocks may restart
+between runs; accepted ingestion order determines the transition.
+
+Unique `(rule_id, opening_event_id)` prevents duplicate episode creation. A partial
+unique `(device_id, rule_id)` index covers ACTIVE and ACKNOWLEDGED together.
+Status/null consistency checks and device/order and status/order indexes are in
+migration 003. `alert_evaluation_state` has primary key `(device_id, rule_id)`,
+nonnegative `last_ingestion_order`, nullable `last_run_id`/`last_state` before the
+first reading, and nullable `open_alert_id` referencing `alerts`. Accepted progress
+and episode changes commit with the inbox. [alerts-design.md](alerts-design.md)
+defines lifecycle, locking and bootstrap semantics; no broader schema is introduced.
 
 ### 3.6 model_versions
 
@@ -241,6 +271,6 @@ It intentionally does not decide:
 ## 6. Next step
 
 Kafka ingestion, queryable telemetry, and recoverable latest-state views are
-implemented against the inbox contract. A read-only FastAPI service now exposes
-this data. The initial dashboard now consumes those APIs; alerts and ML remain
-upcoming increments. See [frontend.md](frontend.md) for the implemented views.
+implemented against the inbox contract. FastAPI and the dashboard expose this
+data plus durable simulator alerts and acknowledgement. ML remains planned.
+See [frontend.md](frontend.md) for the implemented views.

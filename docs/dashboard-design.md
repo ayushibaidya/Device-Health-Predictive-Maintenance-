@@ -5,8 +5,9 @@ implemented on `feat/dashboard`; verification results are recorded in
 [frontend.md](frontend.md).
 
 The owner approved creating `feat/dashboard` from the clean `feat/basic-api`
-checkpoint `480bde8`. The owner creates all commits and pushes; documentation changes belong
-in a separate focused commit before merge.
+checkpoint `480bde8`. Git operations remain owner-controlled under the
+[explicit authorization rule](development-standards.md#phase-based-implementation-commits);
+documentation changes belong in a separate focused commit before merge.
 
 ## A. Screens, components, and API contracts
 
@@ -158,4 +159,6 @@ requires review before implementation.
 
 After verification, report changed files, test results, and remaining frontend
 TBDs; provide separate implementation and documentation commit commands. Hosting,
-public-access/authentication design, alerts, and predictions remain later work.
+public-access/authentication design and predictions remain later work. The
+subsequent [alerts design](alerts-design.md) now adds `/alerts`, compact open-alert
+panels and acknowledgement without changing the original telemetry contracts.

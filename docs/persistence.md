@@ -6,6 +6,11 @@ No API, frontend, alerts, ML, or broader historical schema is added here.
 
 ## Demo and inspection
 
+For an existing database without migration 003, first follow the
+[alerts upgrade procedure](alerts.md#existing-database-upgrade): pause all old
+ingestion processes before migration and deploy the matching consumer/API before
+resuming. The demo and standalone migration commands below do not stop consumers.
+
 With Docker running, from the repository root:
 
 ```sh
@@ -50,7 +55,7 @@ The migration runner records applied filenames under a transaction/advisory
 lock. It also upgrades volumes created by the earlier ingestion demo, preserving
 rows and reconstructing their per-device order from original Kafka coordinates.
 Do not edit applied migrations; add another migration for future changes.
-To apply migrations separately:
+After following that upgrade procedure when applicable, apply migrations separately:
 
 ```sh
 docker compose build migrate
@@ -102,5 +107,7 @@ and runs in GitHub Actions. Performance targets remain unmeasured.
 
 The subsequent `feat/basic-api` increment exposes fleet summary, device detail,
 and history through FastAPI; see [basic-api.md](basic-api.md). The initial
-dashboard consumes those APIs; see [frontend.md](frontend.md). Alert processing
-and ML remain upcoming increments.
+dashboard consumes those APIs; see [frontend.md](frontend.md). Simulator alert
+episodes and evaluation progress now commit atomically with inbox events under
+the approved [alerts contract](alerts.md); migration 003 bootstraps existing
+history during a brief ingestion pause. ML remains upcoming work.

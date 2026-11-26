@@ -3,8 +3,8 @@
 Status: Phase 2 architecture baseline complete. The simulator component design
 was approved on October 27, 2026 and its first implementation increment is now
 available. Kafka ingestion, indexed inbox history, and recoverable Redis latest
-state, a read-only FastAPI service, and the initial fleet/device dashboard are
-also implemented;
+state, FastAPI, the fleet/device dashboard and durable simulator-state alerts
+with acknowledgement are also implemented;
 the remaining increments follow the hosted-MVP path in the README.
 
 This document records logical responsibilities and system contracts. A logical component does not have to be an independently deployed service in the MVP. Details marked TBD are deferred to detailed component design or implementation unless they become an architectural dependency.
@@ -69,7 +69,12 @@ flowchart LR
 	API --> UI[Next.js Dashboard]
 ```
 
-Diagram shows logical flows, not mandated process or deployment boundaries. Internal wiring may evolve; asynchronous processing must remain decoupled from dashboard requests.
+This diagram and the component/data-flow sections below describe the target
+architecture, including planned ML and prediction capabilities. The implemented
+path is simulator → Kafka → validation and atomic inbox/alert persistence →
+PostgreSQL/Redis → FastAPI → dashboard. ML training, inference and predictions
+are not implemented. Logical components do not mandate separate deployments;
+asynchronous processing remains decoupled from dashboard requests.
 
 ## Component Responsibilities
 
@@ -98,10 +103,15 @@ Diagram shows logical flows, not mandated process or deployment boundaries. Inte
 Kafka events now use approved event/run/device identities, topics, and message
 key. The consumer persists or identifies an existing inbox event before
 committing its source offset; invalid records require DLQ acknowledgement first.
-See [kafka-ingestion.md](kafka-ingestion.md). Broader prediction/alert traceability
-is added with those components.
+See [kafka-ingestion.md](kafka-ingestion.md). Simulator alerts and durable rule
+progress now commit in the same inbox transaction before offset commit; see
+[alerts.md](alerts.md) and ADR-007. Prediction traceability remains future work.
 
 ## Data Ownership and Storage
+
+The table includes target ownership for planned device registration/firmware
+history, predictions and model metadata. Those broader registries and model
+stores are not implemented; current device metadata comes from inbox readings.
 
 | Data | Owner / source of truth | Operational use |
 | --- | --- | --- |
@@ -113,7 +123,7 @@ is added with those components.
 | Relevant lifecycle events | PostgreSQL where historical investigation/reproducibility requires them; simulator remains the origin of truth | Investigation and training labels |
 | Latest/current device state | Redis, derived from simulator events | Low-latency dashboard reads; reconstructable where practical |
 | Latest failure risk/prediction | Redis, derived from inference output | Low-latency dashboard reads |
-| Fleet summary counters | Redis, derived cache | Fast fleet overview |
+| Fleet summary counts | PostgreSQL query (implemented); Redis caching remains planned | Counts from the latest accepted reading per device |
 | Events in transit | Kafka | Asynchronous transport and consumer decoupling |
 | Hidden simulator degradation and true failure occurrence | Simulator | Ground truth and offline label/evaluation source; not an inference feature |
 | Model artifacts | Versioned artifact storage | Selected artifact loaded by inference |
@@ -138,9 +148,19 @@ For the detailed Phase 3 event and database schema draft, see [docs/telemetry-sc
 
 Additional Phase 3 design references: [docs/security-scalability.md](security-scalability.md).
 
-The default MVP interval is one event per device every 5 simulated seconds. Normal events include required fields unless unavailable or invalid. Event timestamps represent UTC event time serialized as ISO 8601, are monotonically non-decreasing per device, and remain internally consistent when simulation runs faster than wall-clock time. Ingestion time may be recorded separately.
+The default MVP interval is one event per device every 5 simulated seconds.
+Generated samples advance in simulation time within a run, using ISO 8601 UTC
+event timestamps. A new producer run can restart that clock, and ingestion also
+accepts late readings. Latest state and history therefore use accepted
+`ingestion_order`, not a per-device timestamp monotonicity assumption across
+runs. Ingestion/persistence time is recorded separately.
 
-Missing values are not silently replaced with zero. Missing required fields fail event validation and enter error handling; optional fields may be absent. Malformed or impossible values do not enter normal processing: validation failures are logged, routed to an error/dead-letter path, and counted for observability. ML feature generation must handle missing telemetry consistently between training and inference. The imputation/forward-fill/interpolation policy, exact units, valid ranges, and calibration rules remain TBD during detailed data/ML design.
+Missing values are not silently replaced with zero. Missing required fields fail
+validation; optional fields may be absent. Invalid telemetry follows the existing
+validation/DLQ handling. Units, validation ranges and required/optional-field
+rules are defined in [telemetry-schema.md](telemetry-schema.md) and the implemented
+validator. Future ML imputation/forward-fill/interpolation and physical
+calibration remain design decisions; no missing values are fabricated.
 
 `device_state` is simulator ground truth and may be stored for labels/evaluation, but must not be an ML input feature for failure prediction. Hidden degradation variables and future failure information are also excluded from inference inputs.
 
@@ -184,9 +204,21 @@ Alert Evaluation is a logical component separate from the ML model. It interpret
 
 MVP alert sources include both deterministic simulator/device-state conditions and ML-generated risk signals. Levels are WARNING (early degradation, abnormal behavior, anomaly, or moderate risk), CRITICAL (severe degradation, high imminent-failure risk, or multiple concerning signals), and FAILURE (simulator-confirmed FAILED state). ML probability must never establish FAILURE ground truth.
 
-Lifecycle is ACTIVE → ACKNOWLEDGED → RESOLVED. A user acknowledgement records that an engineer reviewed the alert and accepted it for investigation. RESOLVED means the underlying condition cleared or appropriate reset/restart/replacement occurred. Alert records and acknowledgement state are durable in PostgreSQL. Basic acknowledgement is in MVP; assignment, escalation, email/SMS, PagerDuty, ticketing, and advanced maintenance workflows are out of scope.
+The implemented simulator rule maps WARNING/CRITICAL/FAILED to WARNING/CRITICAL/
+FAILURE episodes. Repeated states preserve identity and acknowledgement. Severity
+changes, including decreases, resolve the old episode as `superseded` and open a
+fresh ACTIVE episode. HEALTHY resolves as `recovered`; run changes resolve as
+`lifecycle_changed`. ACTIVE may resolve directly or be ACKNOWLEDGED first;
+RESOLVED is terminal. Acknowledgement records review, never changes health, and
+preserves its first wall-clock timestamp on retries. This local demo records no
+actor identity. PostgreSQL owns episodes, evidence, progress and acknowledgement;
+Redis holds no alert state. Per-device progress locking and atomic inbox/evaluation
+persistence are approved in [alerts-design.md](alerts-design.md) and
+[ADR-007](adr/ADR-007-atomic-simulator-alerts.md), including historical bootstrap.
 
-Exact alert rules, warning/critical and probability thresholds, signal combinations, cooldown/debounce, notification integrations, and detailed reactivation semantics remain TBD during alert component design.
+ML probability thresholds/signal combinations remain TBD. No numeric threshold,
+cooldown, debounce or notification integration was added to the simulator rule.
+Assignment, escalation and external notifications remain out of scope.
 
 ## API and Dashboard
 
@@ -200,8 +232,8 @@ Logical MVP API capabilities (names may change during detailed API design):
 | Device list and detail (implemented) | `GET /api/v1/devices`, `GET /api/v1/devices/{device_id}` |
 | Device telemetry (implemented) | `GET /api/v1/devices/{device_id}/telemetry` |
 | Device predictions (planned logical route) | `GET /devices/{id}/predictions` |
-| Device alerts and alert list/detail (planned logical routes) | `GET /devices/{id}/alerts`, `GET /alerts`, `GET /alerts/{id}` |
-| Acknowledge alert (planned logical route) | `POST /alerts/{id}/acknowledge` |
+| Device alerts and alert list/detail (implemented) | `GET /api/v1/devices/{device_id}/alerts`, `GET /api/v1/alerts`, `GET /api/v1/alerts/{alert_id}` |
+| Acknowledge alert (implemented) | `POST /api/v1/alerts/{alert_id}/acknowledge` |
 
 Required MVP screens:
 
@@ -213,7 +245,7 @@ The MVP targets reliability investigation with a high-level fleet overview. Mode
 administration, advanced maintenance scheduling, BI/Power BI, assignment, and
 escalation are out of scope. The approved read API's schemas, pagination, errors,
 local access, and health semantics are recorded in [basic-api.md](basic-api.md).
-Public authentication/authorization, future alert/prediction contracts, and
+Public authentication/authorization, future ML alert/prediction contracts, and
 future frontend workflows remain design decisions for their implementation increments.
 
 The initial dashboard is implemented at `/` and `/devices/[deviceId]`, using
@@ -223,7 +255,10 @@ refresh and loading/empty/error/not-found views. The browser does not connect
 directly to data stores or FastAPI; no backend CORS change is required. The
 approved data-access, pagination, charting, and component decisions are recorded
 in [dashboard-design.md](dashboard-design.md) and [frontend.md](frontend.md).
-Alert and prediction portions of the target screens above remain unimplemented.
+The `/alerts` page adds filtered Open/Resolved/All history and acknowledgement
+through same-origin Next.js Server Actions. Fleet/device panels show up to five
+newest open episodes, with simulation evidence times separated from operational
+acknowledgement times. Prediction portions remain unimplemented.
 
 ## Deployment and Environments
 
@@ -235,7 +270,9 @@ Exact AWS architecture, EKS/MSK choices, networking, Terraform modules, load bal
 
 ## Observability, Scale, and Resilience
 
-Long-running services expose structured logs, liveness/health checks, readiness checks, metrics, and identifiers sufficient for end-to-end traceability.
+The target is structured logs, health/readiness checks, metrics and traceability
+across long-running services. Processing/API logs and API health/readiness checks
+are implemented; dedicated metrics and tracing integrations remain planned.
 
 MVP operational metrics include telemetry received/processed/malformed/rejected and processing errors; Kafka consumer lag and processing failures; inference count/failures/latency and active model version; API request count/latency/error rate; Redis hit/miss behavior and observable connection failures; active alert count and alerts created/acknowledged. Exact metric names, tracing framework, Grafana dashboards, and infrastructure alert thresholds remain TBD.
 
@@ -259,21 +296,26 @@ MVP retains telemetry, prediction, and alert history long enough to support trai
 
 ## Decisions Deferred to Component Design / Implementation
 
-Unless needed to resolve an architectural dependency, defer:
+Implemented settings are no longer blanket TBDs: see
+[telemetry-schema.md](telemetry-schema.md) for units/validation,
+[kafka-ingestion.md](kafka-ingestion.md) for transport/retry settings,
+[persistence.md](persistence.md) for inbox indexes and Redis keys/TTLs,
+[basic-api.md](basic-api.md) for payloads/pagination/errors,
+[frontend.md](frontend.md) for layout/charts, and
+[alerts-design.md](alerts-design.md) for simulator episode rules and reactivation.
 
-- Exact telemetry units, valid ranges, calibration, and missing-data/imputation rules.
-- Physical calibration and future device-specific simulator behavior; the first
-  synthetic scenario's equations, thresholds, recovery, and fault injection are
-  now defined in simulator-design.md.
-- Exact ML feature definitions, hyperparameters, serialization, and artifact implementation.
-- Exact alert thresholds, combinations, debounce/cooldown, and reactivation rules.
-- PostgreSQL schema/indexes/partitioning; Redis keys/TTLs/invalidation; Kafka topics/partitions/retention.
-- Retry counts, timeouts, detailed payloads, pagination, API error schemas, and authentication implementation.
-- Kubernetes/AWS topology, Terraform layout, sizing, replicas, autoscaling, networking, and secrets mechanism.
-- Dashboard layout, chart library, filters, and responsive behavior.
-- Exact retention duration, detailed benchmark method, and numerical production SLAs.
+Remaining decisions, unless needed to resolve an architectural dependency:
 
-These details are TBD during detailed component design / implementation, not implicit decisions.
+- Physical calibration, future device-specific metrics/behavior and ML missing-data handling. The first synthetic scenario is defined in [simulator-design.md](simulator-design.md).
+- Exact ML feature definitions, hyperparameters, serialization and artifact implementation.
+- ML risk alert thresholds, signal combinations and any future debounce/cooldown policy.
+- Broader PostgreSQL schemas/partitioning and future cache or transport changes beyond the approved inbox/alert increments.
+- Future component API/error/retry contracts and public authentication/authorization.
+- Kubernetes/AWS topology, Terraform layout, sizing, replicas, autoscaling, networking and secrets mechanism.
+- Additional dashboard workflows/filter controls beyond the implemented fleet, device and alert screens.
+- Exact retention duration, detailed benchmark method and numerical production SLAs.
+
+These remaining details require their own component design and approval.
 
 ## Phase 2 Status and Remaining Questions
 
@@ -288,6 +330,6 @@ integration tests; remaining security and component details follow as needed.
 The simulator, Kafka ingestion, and app-ready data-access increments have received
 explicit design approval and are implemented. History/latest queries reuse the
 inbox rather than introducing the broader draft historical schema. The basic API
-and initial dashboard designs are also approved and implemented. ML, alerts,
-further frontend workflows, and public access
+and initial dashboard and simulator-alert designs are also approved and
+implemented. ML, further frontend workflows, and public access
 decisions are confirmed as those demo-focused increments begin.

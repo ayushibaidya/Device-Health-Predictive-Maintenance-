@@ -2,9 +2,16 @@
 
 The approved [API design](basic-api-design.md) exposes the existing simulated
 telemetry through FastAPI. It reuses the inbox, accepted-event order, history
-filters, and Redis fallback without changing the ingestion event or SQL schema.
+filters, and Redis fallback. The additive [alerts contract](alerts.md) now exposes
+simulator-state episodes and acknowledgement using migration 003. Telemetry
+event and existing read-response contracts remain unchanged.
 
 ## Run and try requests
+
+For an existing database without migration 003, first follow the
+[alerts upgrade procedure](alerts.md#existing-database-upgrade), including pausing
+all old ingestion processes. The general demo and standalone migration commands
+do not stop old consumers for you.
 
 With Docker running, from the repository root:
 
@@ -50,7 +57,7 @@ Each device has one latest accepted reading; counts use a single PostgreSQL quer
 Detail returns `{data_mode, ingestion_order, event}`. Event fields retain their
 ingestion names and original simulation timestamp; absent optional metrics remain
 absent, while explicit null values are preserved. All business responses use
-`data_mode: simulated`. There is no new device registry or fabricated alert/ML data.
+`data_mode: simulated`. There is no new device registry or fabricated ML data.
 
 Device listing returns `{data_mode, items, next_after_device}` in device-ID order.
 Pass `next_after_device` back as `after_device` to continue. History returns
@@ -62,12 +69,13 @@ readings returns an empty page. Pagination is a live view, not a frozen snapshot
 
 Errors use `{error: {code, message}}`: 404 `not_found`, 422 `invalid_request`,
 503 `service_unavailable` when a required database operation is unavailable,
-and sanitized 500 `internal_error` for unexpected faults. Unsupported methods
+409 `alert_resolved` for resolved acknowledgement, and sanitized 500 `internal_error`
+for unexpected faults. Unsupported methods
 return 405 `method_not_allowed`. Connection strings, raw inputs, and driver
 exception messages are not returned; unexpected faults log only their type.
 
 `/health/live` returns 200 independently of stores. `/health/ready` requires a
-readable migrated inbox; otherwise it returns 503. A healthy readiness response
+readable inbox/alert tables and migrations 001–003; otherwise it returns 503. A healthy readiness response
 contains `status: ready`, `database: up`, and `cache: up|degraded|disabled`. Redis
 failure degrades cache status but permits PostgreSQL-backed reads. Each request
 owns and closes its database connection; Redis uses an application-scoped pool.
@@ -84,12 +92,14 @@ bash scripts/test-kafka.sh
 The isolated pipeline suite includes API response/validation/error tests,
 real HTTP reads of C++ simulator events, history/device pagination, lifecycle
 counts, migrations/readiness, real database/Redis connection failures, and
-concurrent request isolation. Local verification passed 90 Python unit tests,
-18 integration tests, and the full API demo. GitHub Actions is configured to run
+concurrent request isolation, plus alert lifecycle, atomic persistence, bootstrap
+and acknowledgement/replay/concurrency tests. GitHub Actions is configured to run
 the same automated suite on pull requests and main pushes.
 
-This is read-only local development access on `127.0.0.1`; login/public-access
+This is local development access on `127.0.0.1`, with read APIs and an alert
+acknowledgement write; login/public-access
 design is deferred until deployment. The implemented dashboard uses Next.js server-side API reads, so
-CORS remains disabled; see [frontend.md](frontend.md). Alert processing and ML
-will be added in their own reviewed increments. The user
-creates the commit and push after reviewing the finished changes.
+CORS remains disabled; acknowledgement uses a Next.js Server Action. See
+[frontend.md](frontend.md) and [alerts.md](alerts.md). ML remains future work.
+Git operations remain owner-controlled under the
+[explicit authorization rule](development-standards.md#phase-based-implementation-commits).

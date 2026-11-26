@@ -64,7 +64,7 @@ psycopg/psycopg-binary 3.3.6. PostgreSQL 18.6 stores the ingestion inbox, now al
 used for indexed history and durable latest-state queries. Broader historical
 tables remain deferred. Redis latest state is derived and recoverable, as
 described in [persistence.md](persistence.md).
-The read-only API uses the same Python image, existing psycopg query layer and
+The API uses the same Python image, existing psycopg query layer and
 SQL migration runner. See [basic-api.md](basic-api.md) for its approved contract.
 The frontend pins all direct dependencies and commits the npm integrity
 lockfile. `.nvmrc` and package engines match the Docker runtime. See
@@ -124,6 +124,32 @@ a pull request and passing checks rather than self-approving. Branch protection
 is a GitHub repository setting and must be enabled separately; this document
 does not enforce it by itself.
 
+### Documentation-first SDLC
+
+For all future features and corrections, including the upcoming AI/RAG incident
+investigation feature, documentation review and owner approval must precede any
+implementation-code or test-code changes:
+
+1. Review the applicable requirements, current architecture, approved design
+   decisions, API/data contracts, and relevant documentation.
+2. Update those documents where necessary and present the proposed scope and
+   unresolved decisions for owner review. If no document changes are necessary,
+   explain that review outcome rather than creating unnecessary documentation.
+3. Obtain the owner's approval of the documentation/design and the intended
+   implementation or test-change scope before changing implementation or tests.
+   Approval to edit documentation alone does not authorize code or test fixes.
+4. Proceed within the approved scope. If a new requirement or material design
+   decision emerges, return to documentation review and approval before making
+   the affected change. Existing approval remains valid for work it already
+   covers; do not repeatedly request approval for unchanged approved decisions.
+5. Verify the approved changes, synchronize documentation with the actual
+   behavior and results, and present the diffs before the owner's Git checkpoint.
+
+Documentation-first specifies the review and approval sequence. The focused
+commit grouping below keeps implementation with its associated tests and keeps
+documentation in a separate commit; it does not permit deferring the initial
+documentation/design review until after code changes.
+
 ### Phase-based implementation commits
 
 Keep Git checkpoints aligned with approved implementation increments. Commit
@@ -135,9 +161,12 @@ that commit.
 A local commit is a checkpoint, not a substitute for the pull request,
 remote CI checks, and merge required by the Definition of Done.
 
-The repository owner runs `git add`, `git commit`, and `git push`. Coding agents
-leave implementation changes uncommitted and provide the exact commands after
-verification; do not create commits on the owner's behalf.
+The repository owner controls Git mutations. By default, coding agents leave
+changes uncommitted and provide the exact commands after verification. An agent
+may stage, commit or push only when the owner explicitly authorizes that operation
+and its scope. Authorization does not automatically extend to additional files,
+later checkpoints, pull requests or merging. Documentation/design approval alone
+does not authorize Git mutations.
 
 Confirm unresolved software design decisions with the user before implementing
 them. Continue within an already approved design without asking for the same
@@ -173,8 +202,9 @@ Before merging each feature, check and record in the pull request:
 
 When documentation updates are needed, include them in a separate focused
 `docs(<component>): ...` commit on the feature branch before it is merged. Coding
-agents prepare the changes and provide separate implementation/documentation
-commit commands for the owner to run. Do not create an empty documentation commit
+agents prepare the changes and separate implementation/documentation commit
+commands for owner review; any Git mutation follows the explicit authorization
+rule above. Do not create an empty documentation commit
 when the review finds no changes are needed.
 
 ## 4. Commit messages

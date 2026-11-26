@@ -2,9 +2,11 @@
 
 Status: proposals A–C explicitly approved October 28, 2026; implemented and locally
 verified with 90 Python unit tests, 18 integration tests, and the full HTTP demo.
-Branch: `feat/basic-api`, based on the pushed persistence checkpoint. Merge order
-remains Kafka ingestion, persistence, then basic API. The user runs all commit
-and push commands; this increment must stay uncommitted until they do so.
+This records the completed original `feat/basic-api` increment and its initial
+verification above. Its base was the pushed persistence checkpoint; dependency
+order remains Kafka ingestion, persistence, then basic API. Current Git
+operations are owner-controlled under the
+[explicit authorization rule](development-standards.md#phase-based-implementation-commits).
 
 ## Purpose and frontend boundary
 
@@ -33,8 +35,9 @@ and an `after_device` cursor returned as `next_after_device`. History reuses the
 existing accepted-order pagination: `run_id`, timezone-aware `start`/`end`,
 `limit` default 100/max 1,000, and `before`/`next_before`.
 
-Alert creation/acknowledgement and prediction endpoints arrive with their actual
-processing increments. This API does not manufacture alert counts or predictions.
+The subsequent approved [alerts design](alerts-design.md) adds episode list/detail
+and acknowledgement endpoints and requires migration 003 for readiness. Existing
+telemetry read contracts remain unchanged. Predictions remain unimplemented.
 
 ## Proposal B: reads, errors, and local access
 
@@ -52,7 +55,7 @@ processing increments. This API does not manufacture alert counts or predictions
 - Readiness is 503 when PostgreSQL/the required migration is unavailable. Redis
   failure reports degraded cache status with readiness 200 because reads fall back
   to PostgreSQL. Liveness is independent of either data store.
-- This increment serves read-only local development access, bound to
+- This initial increment serves read-only local development access, bound to
   `127.0.0.1:8000` on the host, without login. Public access/authentication is a
   separate deployment decision before hosting. CORS remains disabled; the
   subsequent approved dashboard uses Next.js server-side API reads. No wildcard

@@ -4,23 +4,29 @@
 This project simulates a device fleet, streams telemetry through Kafka, saves
 validated readings in PostgreSQL, and presents current device state and history
 in a Next.js dashboard. Redis provides recoverable latest state and FastAPI
-provides the application data interface. Alert processing, ML predictions, and a
-public hosted release are planned subsequent increments.
+provides the application data interface. Durable simulator-state alerts support
+investigation and acknowledgement. ML predictions and a public hosted release
+remain planned increments.
 
 ## Project status
 Status: the C++ simulator and Kafka ingestion path are implemented. Events flow
 through Kafka, Python validation, and a durable PostgreSQL inbox with replay
 deduplication. App-ready history queries and recoverable Redis latest state are
-implemented. A read-only FastAPI service now exposes fleet summary, device
+implemented. FastAPI exposes fleet summary, device
 details, and telemetry history with interactive API documentation. The frontend
 now provides fleet counts, device investigation, telemetry charts/history,
-manual refresh, and loading/empty/error states. Alerts, ML, and public hosting
-remain upcoming increments.
+manual refresh, loading/empty/error states, and alert history/acknowledgement.
+ML and public hosting remain upcoming increments.
 
 Before implementing each component, its toolchain and dependency versions must
 be pinned as described in [docs/development-standards.md](docs/development-standards.md).
 
 ## Run the dashboard demo
+
+For an existing database without migration 003, first follow the
+[alerts upgrade procedure](docs/alerts.md#existing-database-upgrade): pause all old
+ingestion processes before migration and resume only with the matching consumer/API.
+The general demo below does not stop old consumers for you.
 
 With Docker running:
 
@@ -34,6 +40,12 @@ minutes. This runs **C++ simulator -> Kafka -> Python validation ->
 PostgreSQL/Redis -> FastAPI -> Next.js**. All displayed readings come from the
 real API; the devices themselves are simulated. When finished, stop services
 with `docker compose --profile tools down`, which preserves saved data.
+
+For the full **alerts demo**, run `bash scripts/demo-alerts.sh` and open
+[http://localhost:3000/alerts](http://localhost:3000/alerts). This publishes 3,603
+real simulator readings covering warning, critical, failure and recovery, and
+verifies durable, repeat-safe acknowledgement. See the [alerts guide](docs/alerts.md)
+for a fresh acknowledgement walkthrough and the existing-database upgrade pause.
 
 Run `bash scripts/test-dashboard.sh` for the isolated frontend checks, including
 a browser journey through the real pipeline. The backend-only demo remains
@@ -54,11 +66,11 @@ commit, and pull request:
 | Simulator | Completed and merged |
 | Kafka ingestion | Implemented, including the approved ingestion inbox |
 | Persistence/current state | Implemented: bounded history queries and recoverable Redis latest state |
-| Basic API | Implemented: fleet/device/history endpoints, health checks, and interactive docs; alert endpoints follow alert processing |
+| Basic API | Implemented: fleet/device/history and alert endpoints, health checks, interactive docs |
 | Dashboard | Implemented: fleet/device views, current values, history charts, refresh, and application states |
-| Alerts | Planned: durable alert processing, display, and acknowledgement |
-| ML baseline | Failure probability and anomaly signal visible in the UI |
-| Hosted release | Public URL, health checks, and automatically seeded demo data |
+| Alerts | Implemented: durable severity episodes, recovery/history, dashboard display and acknowledgement |
+| ML baseline | Planned (not implemented): predictive failure probability and an anomaly signal in the UI |
+| Hosted release | Planned (not deployed): public URL, deployment health checks, and automatically seeded demo data |
 
 ## Build, test, and demonstrate the simulator
 
@@ -96,6 +108,8 @@ the checksum-pinned nlohmann/json 3.12.0 dependency.
 ## Documentation
 - [docs/requirements.md](docs/requirements.md)
 - [docs/architecture.md](docs/architecture.md)
+- [docs/alerts-design.md](docs/alerts-design.md)
+- [docs/alerts.md](docs/alerts.md)
 - [docs/telemetry-schema.md](docs/telemetry-schema.md)
 - [docs/security-scalability.md](docs/security-scalability.md)
 - [docs/development-standards.md](docs/development-standards.md)
