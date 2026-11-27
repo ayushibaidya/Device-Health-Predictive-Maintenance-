@@ -57,6 +57,14 @@ a browser journey through the real pipeline. The backend-only demo remains
 [Kafka guide](docs/kafka-ingestion.md) for delivery/replay details. Run
 `bash scripts/test-kafka.sh` for the isolated automated check.
 
+AI investigation preparation now includes manifest validation and source-cited
+chunking, verified with the real MiniLM tokenizer: all 44 focused tests passed
+with zero skips. The six synthetic runbooks remain pending owner review. Rerun
+the checks with the optional tools runtime; see the
+[AI design and isolated test setup](docs/ai-investigation-design.md#checkpoint-2a-implementation-scope).
+Embeddings, ranked retrieval, local LLM reports and the Get AI Insights button
+are not implemented yet.
+
 The delivery goal is a public demo with fleet/device views, alert acknowledgement,
 and genuine ML predictions. Each increment gets a focused feature branch, tests,
 commit, and pull request:
@@ -69,6 +77,7 @@ commit, and pull request:
 | Basic API | Implemented: fleet/device/history and alert endpoints, health checks, interactive docs |
 | Dashboard | Implemented: fleet/device views, current values, history charts, refresh, and application states |
 | Alerts | Implemented: durable severity episodes, recovery/history, dashboard display and acknowledgement |
+| AI investigation | Document validation/chunking verified: 44 tests passed with zero skips; embeddings/retrieval/report/button planned |
 | ML baseline | Planned (not implemented): predictive failure probability and an anomaly signal in the UI |
 | Hosted release | Planned (not deployed): public URL, deployment health checks, and automatically seeded demo data |
 

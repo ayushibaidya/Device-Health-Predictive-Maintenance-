@@ -1,9 +1,12 @@
 # AI-assisted incident investigation
 
 Status: architecture approved by the owner on November 26, 2026; Checkpoint 1
-documentation prepared for review. The endpoint, retrieval implementation, model
-runtime and button described below do not exist yet. Concrete response fields,
-error codes and configuration defaults are proposed for review in this checkpoint.
+documentation committed as `091afa1`. Checkpoint 2A document validation and
+chunking are implemented and verified with the real MiniLM tokenizer: 44 focused
+tests passed with zero skips using the owner-installed optional runtime.
+Embeddings, ranked retrieval, generation,
+the endpoint and button described below do not exist yet. Concrete API fields,
+error codes and configuration defaults remain the design for a later increment.
 Baseline: `main` / `feat/ai-investigation` at `2b919b7`, after alerts PR #3.
 
 This contract replaces the older external retrieval-only drafts as the proposed
@@ -104,9 +107,92 @@ or incompatible assets fail explicitly; never publish partial or fake vectors.
 
 ## Local runtime and dependencies
 
-Metadata-only compatibility review found Python 3.13 builds for macOS ARM64,
-Linux ARM64 and Linux x86-64. No installation, inference, latency or memory result
-is claimed. Preserve the existing Python 3.13.18 and backend dependency pins.
+### Checkpoint 2A implementation scope
+
+Implement only manifest/document validation and chunk preparation. The reviewed
+manifest is the allowlist/trust root: validate its schema, required metadata,
+unique IDs/paths, raw-byte SHA-256 hashes and UTF-8 documents before producing any
+chunks. Reject absolute/traversing paths, symlink escapes, malformed metadata,
+missing/altered files and title mismatches. Unlisted files are never read or
+accepted as chunk sources; implementation references are metadata only.
+
+Keep original text unchanged, including internal newlines. Split at Markdown
+heading boundaries (not heading-like lines inside fenced code). Short sections
+may stay below 192 tokens; overlap stays inside a section. For longer sections,
+target 192 total MiniLM input tokens with up to 32 body-token overlap and forward
+progress. Count the complete title/heading/body input plus special tokens, and
+validate every result against the 256-token maximum. Do not reconstruct source
+text by decoding token IDs or silently truncate an oversized input.
+
+Each chunk records document ID/version/path/title, heading path, exact original
+text, zero-based half-open character span, one-based inclusive line span, complete
+model input and token count. Its stable SHA-256 ID includes source identity/span,
+input hash and the versioned chunking/tokenizer profile, without wall-clock data.
+
+Use `tokenizers==0.23.3` to load only the approved MiniLM revision's serialized
+tokenizer. Verify its asset checksum, disable the asset's saved 128-token
+truncation/padding, and explicitly enforce the model's 256-token limit. No Torch,
+Sentence Transformers, embeddings or model weights are required for this step.
+Tokenizer assets are explicit local inputs; no code or test downloads them.
+The currently cached approved tokenizer can be mounted read-only for verification.
+
+Keep tokenizer/test dependencies in a separate hash-locked requirements set and
+optional Python 3.13.18 test image, constrained by the existing backend pins.
+Existing ingestion/runtime locks and images retain their dependencies. The
+ordinary backend test image may copy the dependency-free investigation package
+in its test stage; real-tokenizer cases skip explicitly when optional assets or
+the tokenizer library are absent. Install/provision only after owner authorization.
+
+Expose `python -m device_health_investigation validate --manifest <path>` and
+`python -m device_health_investigation chunk --manifest <path> --tokenizer <tokenizer.json>`.
+Both emit JSON to stdout; validation does not need tokenizer dependencies. Invalid
+corpus/configuration exits 2; missing/incompatible tokenizer dependencies/assets
+exit 1. Preserve the manifest's pending-owner-review status in both outputs.
+No index, embeddings or other AI application functionality is implemented in 2A.
+
+The optional tools image and runner are prepared; installation is owner-controlled:
+
+```sh
+docker build -f processing/Dockerfile.chunking -t device-health-ai-chunking:test .
+MINILM_TOKENIZER_PATH=/absolute/path/to/approved/tokenizer.json bash scripts/test-ai-chunking.sh
+```
+
+The runner requires an already-built image and existing asset, then uses read-only
+mounts, disposable temporary directories and no network. It never builds images,
+installs packages or downloads assets automatically. The `validate`/`chunk` CLI
+runs from `processing/` with this module on the Python path; for example, inside
+the tools container use `--manifest /workspace/knowledge/manifest.json` and
+`--tokenizer /models/tokenizer.json`. Chunk JSON includes the original review
+status, tokenizer/chunking profiles and complete source metadata; it is not a
+vector index or retrieval result.
+
+Local verification on November 26, 2026: Ruff passed; focused tests passed
+41 cases with three explicit real-tokenizer skips. The backend unit regression
+passed 160 cases with the same three skips and 30 integration cases deselected.
+The actual six-document validation CLI passed and retained pending owner review.
+The cached tokenizer matched upstream Git blob
+`cb202bfe2e3c98645018a6d12f182a434c9d3e02` and SHA-256
+`be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037`.
+The agent installed no dependencies or models. The optional image was unavailable
+at that earlier checkpoint, so actual MiniLM chunking was not yet verified.
+A pre-existing non-fatal Starlette/httpx deprecation warning remained in the
+backend unit run.
+
+Subsequent verification on November 26, 2026, after the owner manually built the
+optional tokenizer image: `scripts/test-ai-chunking.sh` passed Ruff and all 44
+focused tests, with zero failures and zero skips. The agent independently reran
+the same offline checks successfully. This includes real MiniLM token counting
+without saved truncation/padding, Unicode/subword spans and overlap, and repeated
+CLI chunking of all six actual runbooks. Repository/model inputs were mounted
+read-only; no assets were downloaded during verification. The runbooks and
+manifest remain `source_checked_pending_owner_review`. These results complete
+2A verification and supplement, rather than replace, the earlier skipped-test
+record. They do not verify embeddings, generation or ranked retrieval.
+
+For the later embedding runtime, metadata-only compatibility review found Python
+3.13 builds for macOS ARM64, Linux ARM64 and Linux x86-64. No embedding-runtime
+installation, inference, latency or memory result is claimed. Preserve the
+existing Python 3.13.18 and backend dependency pins.
 
 | Component | Initial candidate / policy |
 | --- | --- |
@@ -256,11 +342,12 @@ These are future verification gates, not tests already run:
 | Local demo | Real existing alert and PostgreSQL evidence, real MiniLM retrieval and real Qwen generation; record actual versions, latency and resource observations |
 | Regression | Relevant isolated backend/dashboard suites pass; no changes to ingestion or alert/acknowledgement behavior |
 
-Next coding increment, after this documentation review and explicit provisioning/
-implementation authorization: manifest loading, chunking, encoder, file index and
-index/search CLI under `processing/device_health_investigation/`, with focused
-tests and a real-model smoke test. Then add evidence selection, generation/API,
-and the inline dashboard interaction. No job system or broader persistence layer.
+Checkpoint 2A supplies verified manifest loading and chunk preparation under
+`processing/device_health_investigation/`. The next separately authorized coding
+increment adds
+local embeddings, a file index and ranked retrieval/evaluation. Evidence selection,
+generation/API and the inline dashboard interaction follow later. No job system
+or broader persistence layer is required.
 
 Remaining validation items are the final transitive hash lock, actual model
 loading/connectivity, Qwen digest and context/latency/memory behavior, and corpus

@@ -216,8 +216,10 @@ were not rerun for this test-only correction; their earlier results remain above
 
 ## AI investigation acceptance plan
 
-Status: documentation/runbook preparation only. No AI implementation, dependency
-installation, model execution or passing AI test result is claimed. The
+Status: Checkpoint 1 documentation/runbooks are committed; Checkpoint 2A manifest
+validation and chunking are implemented and verified. All 44 focused tests passed
+with zero skips using the real MiniLM tokenizer and owner-installed optional runtime.
+No embedding or generation result is claimed. The
 [feature contract](ai-investigation-design.md#acceptance-criteria-and-next-increment)
 and [ADR-008](adr/ADR-008-local-ai-investigation.md) define the approved direction.
 The historical simulator, alerts and frontend results above remain unchanged.
@@ -253,3 +255,37 @@ were cross-checked against the simulator and related ingestion/alert code at
 manifest hashes, 151 local file links, 19 anchors and changed-file whitespace
 checks passed. The 39 external URLs were checked for syntax, not HTTP availability.
 These are documentation checks; no models or runtime test suites were run.
+
+Checkpoint 2A focuses on corpus metadata/path/hash failures, unlisted-source
+exclusion, exact source spans, heading/code-fence boundaries, overlap, Unicode,
+repeatability and complete-input token limits. Use temporary corpus fixtures;
+verify the six actual runbooks separately without changing their review status.
+Run the real cached MiniLM tokenizer in an isolated optional tools image, with
+network access disabled during tests. Keep dependency-free/fake-tokenizer checks
+available to the existing backend suite. Record actual results after execution;
+no embedding, Ollama, FastAPI or dashboard work belongs to this increment.
+
+November 26, 2026 Checkpoint 2A checks used the existing pinned Python 3.13.18
+backend test image with read-only source and no network/installations: Ruff passed;
+41 focused cases passed and three real-tokenizer cases skipped explicitly. The
+backend unit suite passed 160 cases, with three skips, 30 integration cases
+deselected and the existing non-fatal Starlette/httpx warning. The real six-file
+validation CLI succeeded without changing corpus hashes or review status.
+The initial Docker mount invocation failed before tests started because the
+workspace ends with a space; the corrected read-only volume syntax then passed.
+The three skipped cases cover real MiniLM truncation/padding, Unicode/subword
+spans/overlap, and repeatable six-runbook CLI chunking. They were not passing
+results at that earlier checkpoint. The owner chose to install the isolated
+runtime personally; no packages or models were installed by the agent.
+Backend integration and frontend suites were not rerun for this isolated,
+read-only preparation component.
+
+Subsequent November 26, 2026 verification: after the owner built the optional
+image, `scripts/test-ai-chunking.sh` passed Ruff and all 44 focused cases, with
+zero failures and zero skips. The agent independently reran the checks and
+confirmed the same result, including all three previously skipped cases. Tests ran
+offline with read-only repository/tokenizer mounts and disposable temporary
+storage. Runbook hashes and the pending-owner-review status were preserved.
+This completes 2A verification; it does not establish embedding, ranked retrieval
+or LLM-generation functionality. The earlier 41-passed/three-skipped and backend
+unit results above remain historical evidence.
