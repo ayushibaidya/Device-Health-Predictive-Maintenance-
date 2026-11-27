@@ -1,0 +1,4 @@
+# Optional validation/chunking tools only. No ingestion runtime dependencies.
+tokenizers==0.23.3
+pytest==9.1.1
+ruff==0.17.3

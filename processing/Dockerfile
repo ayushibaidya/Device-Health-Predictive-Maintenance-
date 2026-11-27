@@ -12,6 +12,8 @@ ENTRYPOINT ["python", "-m", "device_health_ingestion"]
 
 FROM runtime AS test
 USER root
+COPY processing/device_health_investigation /app/device_health_investigation
+COPY knowledge /knowledge
 COPY processing/requirements-dev.lock /app/requirements-dev.lock
 RUN python -m pip install --no-cache-dir --require-hashes --only-binary=:all: -r requirements-dev.lock
 COPY processing/tests /app/tests

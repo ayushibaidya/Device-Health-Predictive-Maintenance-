@@ -1,0 +1,9 @@
+# Optional tools image; never replaces the ingestion runtime/test image.
+FROM python:3.13.18-slim-bookworm@sha256:93498f36dc7e24ef233bfdf6cc17d4b8bd32d94ee737143e906460d5f5a914c5
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 TOKENIZERS_PARALLELISM=false
+WORKDIR /workspace/processing
+COPY processing/requirements-chunking.lock /tmp/requirements-chunking.lock
+RUN python -m pip install --no-cache-dir --require-hashes --only-binary=:all: \
+    -r /tmp/requirements-chunking.lock
+USER 10001:10001
+CMD ["python", "-m", "pytest", "--confcutdir=tests/investigation", "tests/investigation", "-q", "-o", "cache_dir=/tmp/pytest-cache"]
