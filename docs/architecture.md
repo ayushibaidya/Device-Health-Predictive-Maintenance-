@@ -7,9 +7,10 @@ state, FastAPI, the fleet/device dashboard and durable simulator-state alerts
 with acknowledgement are also implemented;
 the remaining increments follow the hosted-MVP path in the README.
 
-AI-assisted incident investigation now has an approved local-first architecture
-and a documentation/runbook checkpoint; its retrieval, generation, endpoint and
-UI remain unimplemented. See [the design](ai-investigation-design.md) and
+AI-assisted incident investigation now has implemented document validation,
+local MiniLM embeddings, a rebuildable JSON index and an offline candidate-search
+CLI. Generation, PostgreSQL evidence integration, the endpoint and UI remain
+unimplemented. See [the design](ai-investigation-design.md) and
 [ADR-008](adr/ADR-008-local-ai-investigation.md).
 
 This document records logical responsibilities and system contracts. A logical component does not have to be an independently deployed service in the MVP. Details marked TBD are deferred to detailed component design or implementation unless they become an architectural dependency.
@@ -128,8 +129,9 @@ checks and acknowledgement remain independent of AI asset availability.
 This is a logical module in the existing API, not another application service,
 Kafka consumer or job queue. Ollama is the separately provisioned local model
 runtime. No report table, Redis report cache or database migration is introduced.
-Model provisioning, connectivity, relevance and runtime performance still need
-verification; the [feature contract](ai-investigation-design.md) defines the
+MiniLM provisioning and six-runbook retrieval smoke checks are verified locally.
+Ollama provisioning/connectivity, relevance calibration and runtime performance
+still need verification; the [feature contract](ai-investigation-design.md) defines the
 proposed API, lifecycle boundary rules, failures and acceptance criteria.
 
 ## Data Ownership and Storage
@@ -153,7 +155,7 @@ stores are not implemented; current device metadata comes from inbox readings.
 | Hidden simulator degradation and true failure occurrence | Simulator | Ground truth and offline label/evaluation source; not an inference feature |
 | Model artifacts | Versioned artifact storage | Selected artifact loaded by inference |
 | Active model metadata | PostgreSQL or a model-registry abstraction | Identifies the explicitly selected inference model |
-| AI troubleshooting runbooks and manifest | Repository / Git | Authored synthetic source documents for planned retrieval |
+| AI troubleshooting runbooks and manifest | Repository / Git | Authored synthetic source documents for candidate retrieval; owner review pending |
 | AI retrieval index and local model caches | Rebuildable local artifacts | Derived vectors and provisioned weights; excluded from Git |
 | AI investigation report | Transient response; not a durable record | Snapshot explanation displayed beneath an alert; discarded on full browser reload |
 

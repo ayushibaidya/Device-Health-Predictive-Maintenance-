@@ -1,8 +1,9 @@
 # ADR-008: Local AI investigation with a rebuildable retrieval index
 
 Status: architecture accepted November 26, 2026 through explicit owner approval.
-Implementation is pending; concrete API fields/defaults in the
-[design](../ai-investigation-design.md) are under Checkpoint 1 review.
+Document preparation and local candidate retrieval are implemented on the feature
+branch. Evidence, generation and API/UI integration remain pending; the approved
+[design](../ai-investigation-design.md) records the contracts and verification.
 
 ## Context
 

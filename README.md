@@ -62,8 +62,22 @@ chunking, verified with the real MiniLM tokenizer: all 44 focused tests passed
 with zero skips. The six synthetic runbooks remain pending owner review. Rerun
 the checks with the optional tools runtime; see the
 [AI design and isolated test setup](docs/ai-investigation-design.md#checkpoint-2a-implementation-scope).
-Embeddings, ranked retrieval, local LLM reports and the Get AI Insights button
-are not implemented yet.
+Local CPU MiniLM embeddings, a rebuildable JSON index and cosine candidate search
+are implemented and verified: **113 tests passed**, including offline retrieval
+over 30 chunks from all six runbooks. With the optional image and model already
+prepared, enter a troubleshooting question with:
+
+```sh
+bash scripts/demo-ai-retrieval.sh
+```
+
+Or pass a quoted question: `bash scripts/demo-ai-retrieval.sh "Is error_count cumulative?"`.
+The demo builds/reuses the ignored `build/knowledge/index.json` and prints up to
+three candidates with original text and source references. It uses no database
+or LLM. Similarity scores are uncalibrated; the runbooks remain pending owner
+review. See the [offline setup](docs/ai-investigation-design.md#manual-embedding-setup-and-smoke)
+and [retrieval CLI](docs/ai-investigation-design.md#retrieval-cli-and-verification).
+Local LLM reports and the Get AI Insights button remain planned.
 
 The delivery goal is a public demo with fleet/device views, alert acknowledgement,
 and genuine ML predictions. Each increment gets a focused feature branch, tests,
@@ -77,7 +91,7 @@ commit, and pull request:
 | Basic API | Implemented: fleet/device/history and alert endpoints, health checks, interactive docs |
 | Dashboard | Implemented: fleet/device views, current values, history charts, refresh, and application states |
 | Alerts | Implemented: durable severity episodes, recovery/history, dashboard display and acknowledgement |
-| AI investigation | Document validation/chunking verified: 44 tests passed with zero skips; embeddings/retrieval/report/button planned |
+| AI investigation | Document preparation, local embeddings and candidate retrieval CLI verified; report/API/button planned |
 | ML baseline | Planned (not implemented): predictive failure probability and an anomaly signal in the UI |
 | Hosted release | Planned (not deployed): public URL, deployment health checks, and automatically seeded demo data |
 
