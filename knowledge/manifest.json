@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "corpus_id": "device-health-synthetic-troubleshooting-v1",
+  "language": "en",
+  "synthetic": true,
+  "implementation_baseline": "2b919b72a19364079076a3950292ef92b4da4dcb",
+  "review_status": "source_checked_pending_owner_review",
+  "documents": [
+    {
+      "document_id": "thermal-power",
+      "title": "Synthetic temperature and power observations",
+      "path": "runbooks/thermal-power.md",
+      "sha256": "7d58fe7a9dd0cfd2edcd2f3c288e2664e2bab5346a0f2d02c3d75d310f452c84",
+      "implementation_refs": [
+        "simulator/src/simulator.cpp",
+        "simulator/include/device_health/simulator.hpp"
+      ]
+    },
+    {
+      "document_id": "cpu-memory",
+      "title": "Synthetic CPU and memory observations",
+      "path": "runbooks/cpu-memory.md",
+      "sha256": "a0bd84fd8ddbe70b653cb34ae497fd0064443f47f15b93ae71fa0722402c09f6",
+      "implementation_refs": [
+        "simulator/src/simulator.cpp",
+        "simulator/include/device_health/simulator.hpp",
+        "processing/device_health_ingestion/validation.py"
+      ]
+    },
+    {
+      "document_id": "jitter-errors",
+      "title": "Synthetic timing jitter and error readings",
+      "path": "runbooks/jitter-errors.md",
+      "sha256": "1ee07032dbfd1b98accd9b387d50125e8c0aa602eb9532d0a12b587912d6616b",
+      "implementation_refs": [
+        "simulator/src/simulator.cpp",
+        "processing/device_health_ingestion/validation.py",
+        "processing/device_health_alerts/rules.py"
+      ]
+    },
+    {
+      "document_id": "alert-episodes",
+      "title": "Simulator-state alert episodes and review",
+      "path": "runbooks/alert-episodes.md",
+      "sha256": "8f9bb4f9f479ca49f306a4eeb4c00e0b7db5b233b21c84c479fcae420fa23b97",
+      "implementation_refs": [
+        "processing/device_health_alerts/rules.py",
+        "processing/device_health_alerts/evaluator.py",
+        "processing/device_health_alerts/store.py",
+        "processing/migrations/003_simulator_alerts.sql"
+      ]
+    },
+    {
+      "document_id": "lifecycle-firmware",
+      "title": "Device lifecycle, reset and firmware evidence",
+      "path": "runbooks/lifecycle-firmware.md",
+      "sha256": "1dc805bd1bb9e74bdd5fa0566148db7a11b949255114b975f1997c8746689fca",
+      "implementation_refs": [
+        "simulator/src/simulator.cpp",
+        "simulator/src/main.cpp",
+        "kafka/src/event.cpp"
+      ]
+    },
+    {
+      "document_id": "telemetry-availability",
+      "title": "Telemetry coverage and simulation time",
+      "path": "runbooks/telemetry-availability.md",
+      "sha256": "3e882159b4fe8f07352e96739c6e6f1d4e09947931825053a1858f2fa7ed4f34",
+      "implementation_refs": [
+        "simulator/src/simulator.cpp",
+        "simulator/include/device_health/simulator.hpp",
+        "processing/device_health_ingestion/store.py",
+        "processing/device_health_ingestion/latest.py",
+        "processing/device_health_api/app.py"
+      ]
+    }
+  ]
+}

@@ -213,3 +213,43 @@ The increase from 29 to 30 integration cases comes from parametrizing the existi
 constraint test. Both disposable projects were cleaned up; the development demo
 was not run. The existing Starlette/httpx warning was non-fatal. Frontend suites
 were not rerun for this test-only correction; their earlier results remain above.
+
+## AI investigation acceptance plan
+
+Status: documentation/runbook preparation only. No AI implementation, dependency
+installation, model execution or passing AI test result is claimed. The
+[feature contract](ai-investigation-design.md#acceptance-criteria-and-next-increment)
+and [ADR-008](adr/ADR-008-local-ai-investigation.md) define the approved direction.
+The historical simulator, alerts and frontend results above remain unchanged.
+
+| Layer | Planned checks |
+| --- | --- |
+| Corpus review | Six allowlisted Markdown files; unique IDs, safe paths, exact SHA-256 values and source references checked against baseline `2b919b7`; no invented diagnoses or thresholds |
+| Retrieval unit/filesystem | Temporary directories and fake encoders for parsing, exact source spans, 256-token limit including prefixes/special tokens, overlap, known-vector cosine ranking/ties, top-three bounds, restart loading, no-op reuse, atomic replacement and incompatible profile rejection |
+| Local MiniLM | Separately provisioned, explicitly enabled real-model test: local-only loading, normalized 384-dimensional vectors, relevant/unsupported queries and useful top-three guidance; network disabled during execution |
+| Evidence integration | Disposable PostgreSQL fixtures: all alert statuses, captured `A001` alert fields and linked evidence identities, same-device/run isolation, five-minute inclusive window, 100-row cap/truncation, accepted-order cutoff, explicitly labeled next-run closing metadata, concurrent updates and transaction/connection closed before model invocation; assert no writes |
+| Generation/API | Fake HTTP/model responses for `A001`/`E...`/`D...` source validation, rejection of unknown IDs or altered source identities, exclusion of next-run telemetry, unavailable assets, busy admission, timeout/cancellation/recovery, malformed output and insufficient guidance without LLM calls; existing error envelopes and endpoints preserved |
+| Browser | Existing alert to button/pending/inline report with inspectable sources; insufficient evidence, errors and manual retry; existing navigation and acknowledgement still work |
+| Real local demo | Real PostgreSQL alert evidence, real MiniLM retrieval and real Qwen/Ollama report; record actual runtime/model versions/digests, source references, latency and resource observations |
+
+Keep supported/unsupported retrieval cases labeled before tuning. Freeze relevance
+selection on development cases and evaluate untouched cases separately; do not
+invent a universal similarity cutoff or publish accuracy numbers before measuring.
+Reference membership checks do not establish that generated claims follow from
+their citations; review grounding and simulation-specific limitations separately.
+
+Default automated suites must remain usable without model weights or a running
+Ollama: fast tests use isolated fakes, and real-model cases require explicit
+opt-in/provisioning. Tests never download models implicitly, substitute fake
+production vectors, run the persistent-data demo or modify development volumes.
+Add test configuration/scripts only in the approved implementation increment.
+After implementation, run relevant isolated backend/dashboard regression suites
+and the opt-in real-model demo. Keep new verification evidence dated and separate
+from historical passing results. Large-corpus/load studies are deferred.
+
+Checkpoint 1 documentation verification on November 26, 2026: all six runbooks
+were cross-checked against the simulator and related ingestion/alert code at
+`2b919b7`; all 12 implementation-reference files exist at that baseline. The six
+manifest hashes, 151 local file links, 19 anchors and changed-file whitespace
+checks passed. The 39 external URLs were checked for syntax, not HTTP availability.
+These are documentation checks; no models or runtime test suites were run.

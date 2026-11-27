@@ -7,6 +7,11 @@ state, FastAPI, the fleet/device dashboard and durable simulator-state alerts
 with acknowledgement are also implemented;
 the remaining increments follow the hosted-MVP path in the README.
 
+AI-assisted incident investigation now has an approved local-first architecture
+and a documentation/runbook checkpoint; its retrieval, generation, endpoint and
+UI remain unimplemented. See [the design](ai-investigation-design.md) and
+[ADR-008](adr/ADR-008-local-ai-investigation.md).
+
 This document records logical responsibilities and system contracts. A logical component does not have to be an independently deployed service in the MVP. Details marked TBD are deferred to detailed component design or implementation unless they become an architectural dependency.
 
 ## Goals and Scope
@@ -90,6 +95,7 @@ asynchronous processing remains decoupled from dashboard requests.
 | Alert Evaluation | Applies operational policy to deterministic state transitions and ML risk signals; persists alert lifecycle changes. It is logically separate from ML and may initially share a deployable process with another component. |
 | FastAPI Backend | Validates frontend requests, composes current and historical views from Redis/PostgreSQL, exposes operational APIs, and handles alert acknowledgement. |
 | Next.js Frontend | Presents fleet, device, prediction, telemetry, and alert information and supports alert acknowledgement. Never connects directly to infrastructure stores or Kafka. |
+| AI Investigation (planned) | Composes a bounded read-only alert evidence snapshot, local document retrieval and local LLM explanation. Does not change alert decisions or implement predictive ML. |
 
 ## Data Flow
 
@@ -98,7 +104,7 @@ asynchronous processing remains decoupled from dashboard requests.
 3. Validated telemetry is delivered asynchronously to ML Inference. Exact wiring (for example, a Kafka event versus another internal handoff) remains a detailed design decision.
 4. Inference constructs the observation window, runs anomaly detection and supervised prediction, stores prediction history in PostgreSQL, and updates latest operational risk in Redis.
 5. Alert Evaluation considers simulator-confirmed state changes and ML risk signals, then persists alert state in PostgreSQL.
-6. FastAPI composes current views from Redis and historical views from PostgreSQL. The frontend reads precomputed predictions; a user request never synchronously triggers inference.
+6. FastAPI composes current views from Redis and historical views from PostgreSQL. The frontend reads precomputed predictions; a user request never synchronously triggers predictive inference. On-demand LLM investigation is a separate planned workflow below.
 
 Kafka events now use approved event/run/device identities, topics, and message
 key. The consumer persists or identifies an existing inbox event before
@@ -106,6 +112,25 @@ committing its source offset; invalid records require DLQ acknowledgement first.
 See [kafka-ingestion.md](kafka-ingestion.md). Simulator alerts and durable rule
 progress now commit in the same inbox transaction before offset commit; see
 [alerts.md](alerts.md) and ADR-007. Prediction traceability remains future work.
+
+### Planned AI investigation request path
+
+An explicit **Get AI Insights** action passes the selected alert ID through a
+Next.js Server Action to FastAPI. The existing backend captures a consistent
+PostgreSQL snapshot for that alert's device/lifecycle, bounded to five simulation
+minutes and 100 readings. Database transactions close before model work.
+MiniLM retrieves up to three relevant chunks from the authored synthetic
+runbooks; Ollama/Qwen generates a structured, source-validated inline report.
+One synchronous generation is admitted at a time, with a separate timeout and
+explicit busy/unavailable/invalid-response handling. Ordinary reads, health
+checks and acknowledgement remain independent of AI asset availability.
+
+This is a logical module in the existing API, not another application service,
+Kafka consumer or job queue. Ollama is the separately provisioned local model
+runtime. No report table, Redis report cache or database migration is introduced.
+Model provisioning, connectivity, relevance and runtime performance still need
+verification; the [feature contract](ai-investigation-design.md) defines the
+proposed API, lifecycle boundary rules, failures and acceptance criteria.
 
 ## Data Ownership and Storage
 
@@ -128,8 +153,11 @@ stores are not implemented; current device metadata comes from inbox readings.
 | Hidden simulator degradation and true failure occurrence | Simulator | Ground truth and offline label/evaluation source; not an inference feature |
 | Model artifacts | Versioned artifact storage | Selected artifact loaded by inference |
 | Active model metadata | PostgreSQL or a model-registry abstraction | Identifies the explicitly selected inference model |
+| AI troubleshooting runbooks and manifest | Repository / Git | Authored synthetic source documents for planned retrieval |
+| AI retrieval index and local model caches | Rebuildable local artifacts | Derived vectors and provisioned weights; excluded from Git |
+| AI investigation report | Transient response; not a durable record | Snapshot explanation displayed beneath an alert; discarded on full browser reload |
 
-PostgreSQL owns durable application history; Redis owns derived live operational state; Kafka transports events; the simulator owns ground truth. Redis loss may reduce current-state performance but must not destroy durable history. Anything needed for investigation, audit, training, or reproducibility is durable. Cache contents, current summaries, and temporary rolling feature state may be derived or ephemeral.
+PostgreSQL owns durable application history; Redis owns derived live operational state; Kafka transports events; the simulator owns ground truth. Redis loss may reduce current-state performance but must not destroy durable history. Source evidence needed for investigation, audit, training, or reproducibility is durable. AI explanations are explicitly transient and provide no report audit history; their telemetry and authored document sources retain their existing durable owners. Cache contents, current summaries, and temporary rolling feature state may be derived or ephemeral.
 
 Implemented inbox indexes, Redis keys/TTLs/rebuild, and Kafka topic settings are
 recorded in [persistence.md](persistence.md) and [kafka-ingestion.md](kafka-ingestion.md).
