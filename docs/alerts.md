@@ -202,8 +202,11 @@ API, architecture and frontend guides match the implementation. ADR-007 records
 the meaningful transaction/bootstrap choice; ordinary UI details have no new ADR.
 Resolved TBDs include simulator rules/episodes, acknowledgement semantics,
 locking/replay, schema/bootstrap, alert APIs and UI. Remaining decisions are listed
-above. The branch depends on `feat/dashboard`; preserve the upstream feature
-merge order rather than including every earlier increment in an alerts review.
+above. The branch depends on `feat/dashboard`. The owner has approved preparing
+one integration PR from `feat/alerts` to `main` for the completed feature chain,
+with a proposed merge commit to preserve its development history. This is a
+one-time exception to separate upstream feature merges and the documented
+squash-merge convention. Merging still requires separate owner approval.
 
 Before any further implementation or test-code changes, review requirements,
 architecture, design and relevant documentation, update documents where
@@ -217,7 +220,7 @@ verified constraint-test correction. Documentation/design approval preceded
 implementation; code and associated tests were grouped together, with
 documentation kept separate.
 
-As of November 26, 2026, checkpoints 1–3 are committed and pushed to
+As of November 26, 2026, all four checkpoints are committed and pushed to
 `origin/feat/alerts` under explicit owner authorization:
 
 | Checkpoint | Scope | Commit | Status |
@@ -225,15 +228,15 @@ As of November 26, 2026, checkpoints 1–3 are committed and pushed to
 | 1. Backend, migration and associated tests | 19 backend, test and verification/CI files | `bc20946` | Committed and pushed |
 | 2. Dashboard and associated tests | 17 frontend implementation and test files | `0cac5cf` | Committed and pushed |
 | 3. End-to-end verification/demo automation | Three automation files | `7acb665` | Committed and pushed |
-| 4. Documentation | README and the 14 reviewed files below | — | Pending final review, staging, commit and push |
+| 4. Documentation | README and the 14 reviewed files below | `56834f6` | Committed and pushed |
 
-Only checkpoint 4 remains. Do not repeat the completed implementation commits.
+All four checkpoints are complete. Do not repeat the completed commits.
 Git operations remain owner-controlled under the
 [explicit authorization rule](development-standards.md#phase-based-implementation-commits).
-The commands below are proposed instructions for the remaining checkpoint and
-have not been executed. Review the final diffs and staged scope first; document
-approval alone does not authorize staging, committing or pushing. Use the exact
-15-file allowlist rather than staging the entire documentation directory:
+The commands below record the completed checkpoint 4 procedure, executed after
+explicit owner approval of the reviewed diffs and exact 15-file allowlist. They
+are historical instructions, not a request to stage or commit these files again;
+documentation approval alone does not authorize Git mutations:
 
 ```sh
 git add -- \
