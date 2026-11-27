@@ -12,6 +12,12 @@ CLI, recovery, and repeatability checks. Its commands and demo are documented in
 [simulator.md](simulator.md); the broader strategy below applies as additional
 components are introduced. Run `ctest --preset dev` after building.
 
+Kafka ingestion adds producer identity/failure tests, Python validation and
+acknowledgement-boundary checks, and real Kafka/PostgreSQL integration tests.
+`bash scripts/test-kafka.sh` checks restart deduplication, the database-before-
+offset crash window, DLQ delivery, database recovery, and broker interruption.
+The Kafka ingestion GitHub Actions workflow runs the same script.
+
 ## Unit Testing
 Unit tests will validate the correctness of individual logic components, calculations, feature transformations, model utility functions, and validation logic.
 
@@ -133,4 +139,77 @@ The implementation phase should include CI expectations that verify correctness 
 - performance smoke checks for critical flows
 - regression checks for ML and alerting workflows
 
-The exact CI pipeline structure will be determined in later phases, but the testing strategy requires automated validation as a core platform requirement.
+The implemented ingestion/data-access workflow runs `bash scripts/test-kafka.sh`
+in GitHub Actions. It covers 119 Python unit tests and 30 real-service integration
+tests, including API response/error contracts, HTTP reads of simulator events,
+health/readiness, concurrent database connection isolation, history/pagination,
+lifecycle replay, migration of populated inboxes, Redis recovery/expiry, and
+durable processing during cache connection failure. The C++ producer image
+retains its 39 CTest checks. The script also
+exercises a broker interruption and cleans only its own test volumes.
+`bash scripts/demo-api.sh` demonstrates the full implemented pipeline through
+HTTP, with history/current-state/cache recovery. Alert tests additionally cover
+the transition matrix, episode identity, atomic inbox/alert/cursor rollback,
+historical backfill and its rollback, constraints, concurrent distinct events,
+acknowledgement idempotency, both resolution lock races, and acknowledgement
+surviving a real Kafka offset-commit crash/replay. ML tests arrive with ML.
+
+## Implemented Frontend Verification
+
+`bash scripts/test-dashboard.sh` builds the pinned Next.js application and runs
+TypeScript, lint, four Node chart-data unit tests, and 25 Chromium browser cases.
+Test-only HTTP fixtures provide deterministic loading, empty, failure, pagination,
+and rendering scenarios. A separate browser smoke test uses real C++ events
+through Kafka, validation, PostgreSQL/Redis and FastAPI: fleet → device → history.
+A second real-pipeline browser journey uses the existing 1,200-step C++ scenario
+(3,603 events), verifies WARNING/CRITICAL/FAILURE and recovery, and acknowledges
+the active failure through the dashboard, reloads and repeats safely through
+the API. UI fixtures cover alert filters/history, action pending/error/conflict,
+loading/empty/API failure and narrow/keyboard behavior.
+No fixture data is used by the production application. The isolated test project
+owns its own ports, containers and disposable volumes; GitHub Actions runs the
+same command. Other browser engines and large-fleet measurements remain pending.
+
+The November 23, 2026 isolated baseline run passed both test scripts sequentially:
+Ruff, 119 Python unit tests, 29 backend integration tests, broker recovery,
+frontend build/TypeScript/lint, four chart-data tests, 25 fixture browser tests,
+and two real-pipeline browser journeys. These local results record the baseline
+before the constraint-test correction below; they do not establish remote CI success.
+See [the dated alerts verification record](alerts.md#verification-and-remaining-decisions)
+for resource isolation and historical results.
+
+## Alert constraint coverage correction
+
+Status: **corrected and verified locally on November 23, 2026**, after owner
+approval of the documented test-change scope under the
+[documentation-first SDLC rule](development-standards.md#documentation-first-sdlc).
+The intended alert behavior, production code and migrations are unchanged.
+
+The original `test_database_rejects_invalid_status_and_second_open_episode` in
+[test_alerts_integration.py](../processing/tests/test_alerts_integration.py)
+attempted to insert a second unresolved episode by copying an existing alert's
+`rule_id` and `opening_event_id`. It accepted any `psycopg.errors.UniqueViolation`.
+That insert violated both the unique `(rule_id, opening_event_id)`
+constraint and the partial unique `alerts_one_open_episode_idx` on
+`(device_id, rule_id)` for ACTIVE/ACKNOWLEDGED rows. The opening-event constraint
+could satisfy the assertion even if the partial index were missing.
+
+The corrected test persists a distinct valid WARNING event for the same device
+and lifecycle, then attempts a new alert ID/opening event for the same rule while
+the first episode remains unresolved. It runs once with the first episode ACTIVE
+and once with it ACKNOWLEDGED, asserting the actual
+`diag.constraint_name == "alerts_one_open_episode_idx"` in each case.
+
+The existing invalid-status checks remain. After resolving the first episode,
+the test separately verifies duplicate opening evidence is rejected by
+`alerts_rule_id_opening_event_id_key`, then confirms the distinct opening evidence
+can create an episode. This isolates both uniqueness guards and checks that the
+partial index stops blocking a new episode after resolution.
+
+Verification after correction: all 11 tests in `tests/test_alerts_integration.py`
+passed against an isolated PostgreSQL instance. Then `scripts/test-kafka.sh`
+passed Ruff, 119 unit tests, 30 integration tests and broker interruption/recovery.
+The increase from 29 to 30 integration cases comes from parametrizing the existing
+constraint test. Both disposable projects were cleaned up; the development demo
+was not run. The existing Starlette/httpx warning was non-fatal. Frontend suites
+were not rerun for this test-only correction; their earlier results remain above.

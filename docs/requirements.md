@@ -225,6 +225,15 @@ DATA-009: The system shall explicitly separate target data retention and availab
 
 DATA-010: The system shall support synthetic or simulated fault injection for testing and ML workflow validation without assuming production-like data quality at the initial stage.
 
+DATA-011: Ingestion events shall carry a globally unique event_id, lifecycle run_id,
+and stable device_id. A narrow PostgreSQL inbox shall enforce unique event_id
+values so duplicate detection survives consumer restarts.
+
+DATA-012: App-ready history shall support bounded device/lifecycle/time queries.
+Latest device state shall survive consumer restarts and duplicate replay. Redis
+shall be derived from PostgreSQL, recoverable on loss, and optional for durable
+ingestion; cache failures shall not prevent successful database-backed commits.
+
 ## 11. Security Requirements
 SEC-001: The system shall protect user and operational access with appropriate authentication and authorization controls.
 
@@ -291,6 +300,18 @@ TEST-013: The project shall include simulator-driven tests that validate determi
 
 TEST-014: The project shall include tests covering alert acknowledgement behavior and the representation of current device state and historical evidence in the dashboard workflow.
 
+TEST-015: Ingestion tests shall exercise real Kafka and PostgreSQL, replay after
+consumer restart, the database-before-offset crash window, DLQ acknowledgement,
+and transient failure recovery.
+
+TEST-016: Data-access tests shall cover history filtering/pagination, lifecycle
+resets, replay ordering, populated-inbox migrations, Redis expiry/fallback/rebuild,
+and durable ingestion during Redis connection failure.
+
+TEST-017: Basic API tests shall cover response contracts, bounded queries,
+unknown/invalid requests, sanitized errors, migrated-storage readiness, Redis
+fallback, real HTTP reads of simulator events, and concurrent request isolation.
+
 ## 15. Deployment Requirements
 DEPLOY-001: The system shall support a local, reproducible development environment for running the platform without requiring a final production deployment.
 
@@ -301,6 +322,11 @@ DEPLOY-003: The system shall support a future containerized deployment model wit
 DEPLOY-004: The system shall support future Kubernetes deployment for orchestration, scaling, and health management.
 
 DEPLOY-005: Deployment strategy and infrastructure topology are target requirements only and remain to be finalized in later SDLC phases.
+
+DEPLOY-006: The recruiter-facing release shall provide a public demo URL, working
+fleet/device and alert workflows, genuine ML predictions, health checks, and
+automatically seeded demo data. The README shall link the live demo and document
+what visitors can try and which results have been measured.
 
 ## 16. Observability Requirements
 OBS-001: The platform shall expose metrics, logs, and health signals for service and pipeline monitoring.

@@ -1,7 +1,7 @@
 # Development Standards
 
 This document defines the minimum reproducibility, security, collaboration, and
-quality rules for implementation. The Phase 3 simulator and Kafka baseline is
+quality rules for implementation. The simulator, Kafka, data-access, and API baseline is
 pinned below. Other planned technologies remain unpinned until their component
 implementation begins. Do not infer a version from a developer's machine or use
 floating `latest` dependencies.
@@ -14,7 +14,7 @@ Use the repository's version files, build manifests, dependency lockfiles, and
 container image tags as the executable source of truth. CI and local setup must
 use those same pins.
 
-### Phase 3: simulator and Kafka ingestion
+### Implemented simulator, ingestion, and data access
 
 | Component | Required baseline |
 | --- | --- |
@@ -26,10 +26,16 @@ use those same pins.
 | Simulator JSON encoding | nlohmann/json 3.12.0; release archive and SHA-256 pinned in `cmake/Dependencies.cmake` |
 | Kafka client | `librdkafka` 2.15.1 |
 | Kafka broker | Apache Kafka 4.3.1, official Docker image, KRaft mode; ZooKeeper is not used |
+| Latest-state cache | Redis 8.10.3, official Alpine image pinned by digest; redis-py 8.1.0 |
+| HTTP API | FastAPI 0.162.0, Pydantic 2.14.1, Uvicorn 0.54.0; HTTPX 0.28.1 for tests/demo |
+| Frontend runtime/build | Node 24.22.1 LTS, npm 11.19.1; Docker tag and digest pinned |
+| Frontend framework | Next.js 16.4.3, React/React DOM 19.3.1, TypeScript 6.0.3 |
+| Frontend styling/charts | Tailwind CSS 4.3.3, Recharts 3.10.1 |
+| Frontend verification | Playwright 1.64.1, ESLint 10.13.0 with Next.js config 16.4.3; Node test runner for chart data |
 
-`librdkafka` 2.15.1 is pinned because it is the latest confirmed official tagged
-release available for reproducible installation. Upgrade to 2.16.0 only after an
-official `v2.16.0` release/tag is published and verified.
+`librdkafka` 2.15.1 remains the explicitly approved ingestion baseline. Dependency
+upgrades are separate reviewed changes, rather than implicit updates to whichever
+release is newest.
 
 Local builds target `arm64`. Docker images and services must support Apple
 Silicon where available. The same C++ project must compile with both the local
@@ -50,10 +56,26 @@ substitute for executable pins.
 The simulator build, approved behavior, CLI, tests, and demonstration are
 documented in [simulator.md](simulator.md) and [simulator-design.md](simulator-design.md).
 CTest is supplied by the pinned CMake toolchain; no additional test framework is
-required. The CI bootstrap uses Python solely to install pinned CMake inside an
+required. The C++ CI bootstrap uses Python solely to install pinned CMake inside an
 ephemeral GCC container; it does not introduce a Python runtime for the simulator.
 
-Before adding Python services, pin Python and FastAPI versions; before adding the
+The consumer pins Python 3.13.18, confluent-kafka 2.15.1, and
+psycopg/psycopg-binary 3.3.6. PostgreSQL 18.6 stores the ingestion inbox, now also
+used for indexed history and durable latest-state queries. Broader historical
+tables remain deferred. Redis latest state is derived and recoverable, as
+described in [persistence.md](persistence.md).
+The API uses the same Python image, existing psycopg query layer and
+SQL migration runner. See [basic-api.md](basic-api.md) for its approved contract.
+The frontend pins all direct dependencies and commits the npm integrity
+lockfile. `.nvmrc` and package engines match the Docker runtime. See
+[frontend.md](frontend.md) for setup and checks; TypeScript 6.0.3 is the supported
+version for the pinned Next.js lint toolchain.
+Runtime/dev lockfiles pin transitive dependencies and hashes; image tags and
+digests pin execution environments. Docker Engine 27+ and Compose 2.24+ are the
+supported baseline, tested locally with 29.2.1 and 5.0.2 respectively. See
+[kafka-ingestion.md](kafka-ingestion.md) for the contract and verification.
+
+Before adding API services, pin FastAPI and related versions; before adding the
 frontend, pin Node.js and frontend package versions; before using PostgreSQL or
 Redis, pin their engine versions. Pin Docker/Compose versions or document the
 supported range for local orchestration. Optional and future technologies are
@@ -102,20 +124,88 @@ a pull request and passing checks rather than self-approving. Branch protection
 is a GitHub repository setting and must be enabled separately; this document
 does not enforce it by itself.
 
+### Documentation-first SDLC
+
+For all future features and corrections, including the upcoming AI/RAG incident
+investigation feature, documentation review and owner approval must precede any
+implementation-code or test-code changes:
+
+1. Review the applicable requirements, current architecture, approved design
+   decisions, API/data contracts, and relevant documentation.
+2. Update those documents where necessary and present the proposed scope and
+   unresolved decisions for owner review. If no document changes are necessary,
+   explain that review outcome rather than creating unnecessary documentation.
+3. Obtain the owner's approval of the documentation/design and the intended
+   implementation or test-change scope before changing implementation or tests.
+   Approval to edit documentation alone does not authorize code or test fixes.
+4. Proceed within the approved scope. If a new requirement or material design
+   decision emerges, return to documentation review and approval before making
+   the affected change. Existing approval remains valid for work it already
+   covers; do not repeatedly request approval for unchanged approved decisions.
+5. Verify the approved changes, synchronize documentation with the actual
+   behavior and results, and present the diffs before the owner's Git checkpoint.
+
+Documentation-first specifies the review and approval sequence. The focused
+commit grouping below keeps implementation with its associated tests and keeps
+documentation in a separate commit; it does not permit deferring the initial
+documentation/design review until after code changes.
+
 ### Phase-based implementation commits
 
 Keep Git checkpoints aligned with approved implementation increments. Commit
-each completed increment separately, including its code, focused tests,
-build/CI configuration, and related documentation. Use a component scope in the
-Conventional Commit message, and keep subsequent increments out of that commit.
-The simulator is the first implementation increment; Kafka publishing is the
-next. A local commit is a checkpoint, not a substitute for the pull request,
+each increment's code, focused tests, and build/CI configuration in focused
+implementation commits. Keep related documentation changes in a separate focused
+commit before merge, following the documentation review below. Use a component
+scope in the Conventional Commit message, and keep subsequent increments out of
+that commit.
+A local commit is a checkpoint, not a substitute for the pull request,
 remote CI checks, and merge required by the Definition of Done.
+
+The repository owner controls Git mutations. By default, coding agents leave
+changes uncommitted and provide the exact commands after verification. An agent
+may stage, commit or push only when the owner explicitly authorizes that operation
+and its scope. Authorization does not automatically extend to additional files,
+later checkpoints, pull requests or merging. Documentation/design approval alone
+does not authorize Git mutations.
 
 Confirm unresolved software design decisions with the user before implementing
 them. Continue within an already approved design without asking for the same
 approval again. Preserve approved decisions and verification results in the
 component documentation so later phases can resume from the saved checkpoint.
+
+The priority is a credible hosted MVP. Keep the existing SDLC documents, feature
+branches, focused commits, and relevant tests while making every increment
+advance ingestion, persistence/current state, API, dashboard/alerts, ML, and
+hosting. Keep design records concise and confirm material decisions without
+delaying routine implementation.
+
+### Documentation synchronization and pre-merge review
+
+Keep project documentation synchronized with the implemented system as each
+feature progresses. Update the relevant design or contract document when
+implementation clarifies or changes an approved decision. Confirm any new design
+decision with the owner under the existing approval rule before implementing it.
+Distinguish implemented behavior from planned behavior and remove descriptions
+that no longer match the system.
+
+Update `README.md` only when user-facing setup, capabilities, the architecture
+summary, or demo instructions change. Add or update an ADR only for a meaningful
+architectural decision. Routine code changes do not justify unrelated document
+rewrites or a new ADR.
+
+Before merging each feature, check and record in the pull request:
+
+1. Whether architecture, design, or contract documents need updates.
+2. Whether `README.md` needs updates under the criteria above.
+3. Whether a new or updated ADR is justified.
+4. Whether implementation has resolved an existing TBD that can now be documented.
+
+When documentation updates are needed, include them in a separate focused
+`docs(<component>): ...` commit on the feature branch before it is merged. Coding
+agents prepare the changes and separate implementation/documentation commit
+commands for owner review; any Git mutation follows the explicit authorization
+rule above. Do not create an empty documentation commit
+when the review finds no changes are needed.
 
 ## 4. Commit messages
 
@@ -143,8 +233,9 @@ A feature or fix is done only when all applicable items below are satisfied:
   pass locally and in CI.
 - Configuration, schema/migrations, operational behavior, and security controls
   are updated when affected. No credentials or sensitive sample data are added.
-- Relevant documentation and setup instructions are updated, including version
-  pins or environment-variable documentation when those change.
+- The documentation pre-merge review is recorded in the pull request. Required
+  documentation updates, including changed version pins and environment
+  variables, are included in a separate focused documentation commit before merge.
 - The pull request is reviewed, required CI checks pass, and the change is merged
   to `main` using the agreed merge strategy.
 

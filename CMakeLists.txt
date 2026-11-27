@@ -9,3 +9,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 include(CTest)
 include(cmake/Dependencies.cmake)
 add_subdirectory(simulator)
+
+option(DEVICE_HEALTH_WITH_KAFKA "Build the approved Kafka publisher" OFF)
+if(DEVICE_HEALTH_WITH_KAFKA)
+    add_subdirectory(kafka)
+endif()

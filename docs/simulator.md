@@ -2,7 +2,8 @@
 
 The first implementation increment is a C++20 simulator with automated tests and
 a repeatable terminal demo. Its [design](simulator-design.md) was approved on
-October 27, 2026. Kafka publishing is the next increment.
+October 27, 2026. Kafka publishing has since been implemented in the
+[Kafka ingestion increment](kafka-ingestion.md).
 
 ## Build and test
 
@@ -123,15 +124,17 @@ These are synthetic generation rules, not calibrated physical distributions.
 
 ## Scope and next integration
 
-The executable has no Kafka, database, Redis, ML, API, or browser integration.
-Its telemetry follows the accepted unit-qualified event fields, without hidden
+The original stdout build remains independent of Kafka and databases. The
+optional Kafka build now publishes identified events to the validated ingestion
+pipeline in [kafka-ingestion.md](kafka-ingestion.md). Its telemetry follows the
+accepted unit-qualified event fields, without hidden
 degradation or future failure information. These generic devices have no
 actuators, so optional actuator fields are omitted.
 
-Before the Kafka increment, confirm event/lifecycle identity, topic and key,
-delivery/retry behavior, and error routing. Event IDs and lifecycle IDs are
-deliberately unresolved in this increment; resets should not be used to create
-training datasets until lifecycle boundaries are represented explicitly.
+The Kafka increment now supplies event/lifecycle identity, the approved topics
+and key, producer delivery checks, DLQ routing, and durable deduplication. Kafka
+records distinguish reset lifecycle boundaries; ML dataset preparation remains
+part of the ML increment.
 
 ## Verification recorded on October 27, 2026
 

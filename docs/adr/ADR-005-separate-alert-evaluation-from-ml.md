@@ -13,4 +13,10 @@ Alternatives Considered:
 - Require a separately deployed alert microservice from the start: rejected as unnecessary deployment complexity absent a concrete need.
 
 Consequences:
-Alert policy can change independently of model implementation while retaining explicit acknowledgement/history. Exact thresholds, combinations, cooldown/debounce, and reactivation behavior remain TBD during detailed alert design. Assignment, escalation, and external notifications are out of MVP scope.
+Alert policy can change independently of model implementation while retaining
+explicit acknowledgement/history. The simulator-state episode policy and atomic
+ingestion/bootstrap are now approved in [ADR-007](ADR-007-atomic-simulator-alerts.md)
+and [alerts-design.md](../alerts-design.md). ACTIVE may resolve without
+acknowledgement; supersession and lifecycle change resolve an old episode without
+implying recovery. ML thresholds/combinations remain TBD. Assignment, escalation
+and external notifications remain out of MVP scope.
