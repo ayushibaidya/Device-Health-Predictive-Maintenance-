@@ -9,8 +9,10 @@ the remaining increments follow the hosted-MVP path in the README.
 
 AI-assisted incident investigation now has implemented document validation,
 local MiniLM embeddings, a rebuildable JSON index and an offline candidate-search
-CLI. Generation, PostgreSQL evidence integration, the endpoint and UI remain
-unimplemented. See [the design](ai-investigation-design.md) and
+CLI. Read-only PostgreSQL alert evidence capture is implemented independently,
+using one repeatable-read snapshot and closing database resources before model
+work. Generation, evidence/retrieval/report composition, the endpoint and UI
+remain unimplemented. See [the design](ai-investigation-design.md) and
 [ADR-008](adr/ADR-008-local-ai-investigation.md).
 
 This document records logical responsibilities and system contracts. A logical component does not have to be an independently deployed service in the MVP. Details marked TBD are deferred to detailed component design or implementation unless they become an architectural dependency.

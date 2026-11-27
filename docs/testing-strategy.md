@@ -394,3 +394,73 @@ The corrected-fixture rerun passed all **113 tests, zero failures/skips**, Ruff
 and dependency consistency in the existing offline retrieval image. No production
 defect was found and no production code changed. This supplements, rather than
 replaces, the earlier Checkpoint 2B results.
+
+## Checkpoint 3A PostgreSQL evidence verification plan
+
+The approved evidence contract requires one repeatable-read/read-only snapshot,
+captured alert fields and `A001`/`E...` references, inclusive five-minute simulation
+bounds, at most 100 readings with cap detection, and accepted-order lifecycle
+isolation. Review that contract before implementing; no new database schema,
+ingestion/acknowledgement behavior or report-sufficiency threshold is required.
+
+Unit cases cover missing/invalid alerts, inconsistent/missing evidence, payload
+identity mismatches, closing relations, sparse/no-anchor cases, database failures
+and transaction/connection cleanup. Real PostgreSQL cases cover ACTIVE,
+ACKNOWLEDGED and RESOLVED alerts, simulation-clock resets, opening/closing evidence
+outside the window, ordering and cutoff, 100/101-row boundaries, actual read-only
+enforcement and concurrent updates after snapshot capture. Sparse valid evidence
+retains its actual count; absent/inconsistent required links fail explicitly.
+
+Use only cached images and a uniquely named internal Docker network with a fresh
+PostgreSQL 18.6 container backed by tmpfs, no host ports/development volumes and
+explicit test-only database credentials. Test schemas/migrations are confined to
+that disposable instance. Run relevant backend unit/alert integration checks in
+the existing lightweight backend environment; separately rerun the 113 existing
+AI tests in the optional retrieval image. Do not install models, run the persistent
+demo, or merge/stage/commit anything. Record actual results after execution.
+
+November 27, 2026 Checkpoint 3A verification:
+
+- Docker Desktop was restarted after macOS; Docker 29.9.3 ARM64 and the existing
+  backend, PostgreSQL and optional retrieval images were reused. No packages,
+  images or models were installed/downloaded. The first evidence-runner attempt
+  stopped before tests because the combined PostgreSQL tag/digest was not found
+  locally; using its identical cached repository digest resolved that lookup.
+- `scripts/test-ai-evidence.sh`: dependency consistency and Ruff passed;
+  **260 passed, 5 skipped, 46 deselected** in the backend unit phase. The skipped
+  cases require optional tokenizer/model provisioning and are covered by the
+  separate real-model suite. All 33 new evidence unit cases passed.
+- Disposable PostgreSQL phase: **27 passed**, covering all 16 new evidence cases
+  and 11 existing alert integration cases. Checks include otherwise eligible
+  other-device/prior-run rows, clock resets, accepted-order/time boundaries,
+  99/100/101-reading caps, old opening identity outside the window, actual
+  read-only SQLSTATE `25006`, zero application-row changes, connection closure,
+  captured status during concurrent updates and explicit database/evidence errors.
+- `scripts/test-ai-embeddings.sh`: **113 passed, zero failures/skips**, Ruff and
+  dependency consistency passed with the unchanged optional model environment.
+
+The backend phases each retain the existing Starlette/httpx TestClient
+deprecation warning; no dependency change was made to silence it. Databases were
+fresh tmpfs containers on unique internal networks, not persistent development
+volumes. Full Kafka interruption and browser workflows were not rerun; their
+earlier results above remain historical evidence. This verifies the evidence
+module, not the unimplemented report/API/UI composition or LLM.
+
+Approved Checkpoint 3A calendar-boundary correction: a valid anchor whose exact
+five-minute window underflows the supported calendar range must raise sanitized
+`EvidenceUnavailable`, with rollback and connection cleanup. Regression cases
+cover the minimum timestamp and one second below the first representable full
+window; the exact five-minute boundary must still succeed with unchanged bounds.
+This changes failure handling only, not ingestion acceptance, lifecycle filtering,
+the evidence window or existing alert behavior.
+
+The corrected November 27 rerun passed **263 backend unit tests, 5 skipped,
+46 deselected**, including all three calendar-boundary cases; **27 PostgreSQL
+integration tests**; and **113 AI tests, zero failures/skips**. Ruff and dependency
+consistency passed. The evidence suite now has 36 unit and 16 integration cases.
+Underflow cases assert the sanitized error, original `OverflowError` cause,
+transaction rollback and closed connection; the successful boundary case asserts
+the full five-minute interval and cleanup. The existing Starlette/httpx warning
+remains nonfatal. Fresh tmpfs test resources were used; no development data,
+dependencies or Git history changed. The earlier 260-test result remains above
+as historical evidence.

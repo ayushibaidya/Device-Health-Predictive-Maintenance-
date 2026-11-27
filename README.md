@@ -79,6 +79,11 @@ review. See the [offline setup](docs/ai-investigation-design.md#manual-embedding
 and [retrieval CLI](docs/ai-investigation-design.md#retrieval-cli-and-verification).
 Local LLM reports and the Get AI Insights button remain planned.
 
+Read-only PostgreSQL alert evidence capture is also implemented independently:
+it selects up to 100 same-lifecycle readings in a five-minute simulation window.
+Run `bash scripts/test-ai-evidence.sh` for isolated backend/database verification
+using cached images; see the [evidence-reader contract](docs/ai-investigation-design.md#checkpoint-3a-postgresql-evidence-reader).
+
 The delivery goal is a public demo with fleet/device views, alert acknowledgement,
 and genuine ML predictions. Each increment gets a focused feature branch, tests,
 commit, and pull request:
@@ -91,7 +96,7 @@ commit, and pull request:
 | Basic API | Implemented: fleet/device/history and alert endpoints, health checks, interactive docs |
 | Dashboard | Implemented: fleet/device views, current values, history charts, refresh, and application states |
 | Alerts | Implemented: durable severity episodes, recovery/history, dashboard display and acknowledgement |
-| AI investigation | Document preparation, local embeddings and candidate retrieval CLI verified; report/API/button planned |
+| AI investigation | Document preparation, local embeddings, candidate retrieval and PostgreSQL alert evidence verified; report/API/button planned |
 | ML baseline | Planned (not implemented): predictive failure probability and an anomaly signal in the UI |
 | Hosted release | Planned (not deployed): public URL, deployment health checks, and automatically seeded demo data |
 

@@ -7,6 +7,8 @@ tests passed with zero skips using the owner-installed optional runtime.
 Checkpoint 2B's local embeddings, JSON index and candidate-retrieval CLI are
 implemented and verified: 113 tests passed, including offline six-runbook
 retrieval. The earlier owner-run 77-test embedding result remains below.
+Checkpoint 3A's read-only PostgreSQL evidence reader is implemented and verified
+independently of retrieval/generation; see the evidence-reader section below.
 Generation, the endpoint and button do not exist yet. Concrete API fields,
 error codes and configuration defaults remain the design for a later increment.
 Baseline: `main` / `feat/ai-investigation` at `2b919b7`, after alerts PR #3.
@@ -70,6 +72,103 @@ The anchor and window use simulation time. `generated_at` and timeout measuremen
 use wall-clock time. Accepted order, not cross-run timestamps, bounds the episode.
 An alert can change after the snapshot; the result describes the captured status,
 not a live claim about the device.
+
+### Checkpoint 3A: PostgreSQL evidence reader
+
+Implement the approved database snapshot independently of retrieval/generation.
+`EvidenceQueries(dsn).get(alert_id)` uses the existing PostgreSQL connection
+settings and alert-column contract, with one REPEATABLE READ, READ ONLY
+transaction. It returns only the existing proposed report contract's evidence
+subset: `schema_version`, `data_mode`, alert/device/run identity, `alert_status`,
+`evidence`, and `sources.alert`/`sources.telemetry`. No report, document retrieval,
+generation status, API route or database write is introduced. Use one reader per
+capture; its transaction and connection close on success or failure before return.
+
+Validate linked opening/last/closing identities, simulation times and accepted
+order, including the rule that resolved last/closing evidence identify the same
+event. Stored payload identities/times must match inbox columns and the existing
+telemetry validation contract. Next-run closure is permitted only for a resolved
+`lifecycle_changed` alert; return its identity with `subsequent_lifecycle`, never
+its payload. Keep all captured alert fields in `A001`; opening/closing events
+outside the selected window contribute metadata only.
+
+Freeze the cutoff at captured `last_event_id`. Find the last accepted same-device,
+same-run row at/before that cutoff, then read the inclusive five-minute simulation
+window at/before its anchor order. Read at most 101 rows descending to detect
+truncation, keep the newest 100, and assign `E001` onward in ascending accepted
+order. Each source includes `event_id`, `ingestion_order` and the exact validated
+event under `event`, consistent with existing reading contracts. Serialize UUIDs
+and aware timestamps as strings/UTC; retain the original telemetry JSON values.
+
+Reuse `AlertNotFound` for a missing alert and `TransientProcessingError` for the
+existing temporary database-failure categories. `EvidenceUnavailable` identifies
+missing/inconsistent linked evidence or a missing/inconsistent anchor/window;
+an anchor whose full five-minute window cannot be represented by calendar
+arithmetic also raises this sanitized error. Preserve the exact five-minute
+window rather than clamp its start. Invalid UUID inputs fail before connecting.
+Messages are sanitized; no DSNs or payloads are logged. Future API error mapping
+remains as proposed below.
+
+Do not invent a minimum-reading or elapsed-coverage threshold here. A single
+valid sample returns a factual `reading_count: 1`, without claiming a trend or a
+complete investigation. A valid anchor necessarily belongs to its inclusive
+window; missing anchor/rows is an availability failure, not a fabricated empty
+success. The later composer still handles `insufficient_evidence` when guidance
+or report evidence is inadequate. No interpolation or cross-lifecycle fill occurs.
+
+Tests use fakes for validation/errors/resource cleanup and a disposable PostgreSQL
+18.6 container/schema for actual ordering, bounds, lifecycle closure, cap,
+read-only enforcement and concurrent-update snapshot consistency. Reuse cached
+backend test dependencies and the existing optional AI environment. Do not run
+the persistent-data demo, change migrations, or rebuild ingestion behavior.
+The implementation is in
+[`evidence.py`](../processing/device_health_investigation/evidence.py).
+
+Run the isolated evidence checks with Docker running and the existing backend
+test/PostgreSQL images cached:
+
+```sh
+bash scripts/test-ai-evidence.sh
+```
+
+The script uses the local `device-health-kafka-tests:latest` test artifact from
+the existing locked backend Dockerfile, with current source mounted read-only.
+`AI_EVIDENCE_TEST_IMAGE` can select another existing reviewed tag or immutable
+image ID. The PostgreSQL repository digest matches the approved 18.6 image in
+`compose.yaml`; the digest-only reference reuses Docker's cached image after
+the restart. Nothing is automatically built, pulled or installed. The script
+creates its own internal network and tmpfs PostgreSQL container, uses no host
+ports or development volumes, and removes only its own resource IDs on exit.
+
+November 27, 2026 verification after the macOS restart: Docker Desktop was started
+and the existing Docker 29.9.3 ARM64 daemon/cached images became available.
+`scripts/test-ai-evidence.sh` passed dependency consistency, Ruff, **260 backend
+unit tests** (five optional-model cases skipped; 46 integration cases deselected)
+and **27 PostgreSQL integration tests** (16 new evidence cases plus 11 existing
+alert cases). At that verification, the new evidence suite contained 33 unit and
+16 integration cases.
+All selected integration tests passed, including actual read-only SQL rejection,
+concurrent acknowledgement/telemetry updates, and otherwise eligible rows from
+another device/previous run. The existing Starlette/httpx test-client deprecation
+warning remains; dependency pins were preserved.
+
+The unchanged optional retrieval environment separately passed all **113 AI
+tests, zero failures/skips**, including real local MiniLM retrieval. Test runs
+used fresh database state and did not run the persistent-data demo or change
+application data. Full Kafka/broker-interruption and browser suites were not
+rerun for this isolated reader; their earlier results remain historical evidence.
+
+Subsequent approved calendar-boundary correction verification on November 27:
+three new unit cases cover underflow at the minimum timestamp, one second below
+the first full window, and successful capture at the exact five-minute boundary.
+The failures are sanitized `EvidenceUnavailable` errors with rollback/connection
+cleanup; the successful case retains the exact five-minute bounds. The latest
+run passed **263 backend unit tests** (five optional-model skips, 46 integration
+cases deselected), **27 PostgreSQL integration tests** and **113 AI tests**,
+plus Ruff and dependency consistency. There are now 36 evidence unit cases and
+16 evidence integration cases. The existing Starlette/httpx warning remains;
+the earlier results above are preserved. No lifecycle, window, cap, ingestion,
+acknowledgement or schema behavior changed.
 
 ## Corpus, chunking and retrieval
 
@@ -552,7 +651,9 @@ automatically when acknowledgement changes.
 
 ## Acceptance criteria and next increment
 
-These are future verification gates, not tests already run:
+These are acceptance gates for the complete feature. Completed document-preparation,
+local-retrieval and PostgreSQL-evidence test results are recorded above. Relevance
+calibration, generation/API, browser and full LLM demo verification remain pending.
 
 | Area | Required evidence |
 | --- | --- |
@@ -566,15 +667,14 @@ These are future verification gates, not tests already run:
 | Local demo | Real existing alert and PostgreSQL evidence, real MiniLM retrieval and real Qwen generation; record actual versions, latency and resource observations |
 | Regression | Relevant isolated backend/dashboard suites pass; no changes to ingestion or alert/acknowledgement behavior |
 
-Checkpoint 2A supplies verified manifest loading and chunk preparation under
-`processing/device_health_investigation/`. The next separately authorized coding
-increment adds
-local embeddings, a file index and ranked retrieval/evaluation. Evidence selection,
-generation/API and the inline dashboard interaction follow later. No job system
-or broader persistence layer is required.
+Checkpoints 2A/2B supply verified document preparation, local embeddings and
+candidate retrieval under `processing/device_health_investigation/`. Checkpoint
+3A now implements the approved read-only PostgreSQL evidence reader; generation,
+API and the inline dashboard interaction follow later. No job system or broader
+persistence layer is required.
 
-Remaining validation items are the final transitive hash lock, actual model
-loading/connectivity, Qwen digest and context/latency/memory behavior, and corpus
-relevance calibration. A model substitution or material contract change returns
-to owner review. README commands and verification results are added only after
-they exist; this checkpoint authorizes no installs, model downloads or Git writes.
+Remaining validation items include evidence/retrieval/report composition, Ollama
+connectivity, Qwen digest and context/latency/memory behavior, and corpus relevance
+calibration. A model substitution or material contract change returns to owner
+review. README commands and verification results are added only after they exist;
+3A authorizes no Ollama/model installs, API/UI work or Git writes.
