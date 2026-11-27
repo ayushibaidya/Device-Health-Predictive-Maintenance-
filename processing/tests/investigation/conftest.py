@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from device_health_investigation.documents import Document
+from device_health_investigation.model_assets import load_model_manifest
 from device_health_investigation.tokenizer import MiniLMTokenizer
 
 
@@ -79,3 +80,23 @@ def real_tokenizer():
 @pytest.fixture
 def project_manifest():
     return Path(__file__).resolve().parents[3] / "knowledge" / "manifest.json"
+
+
+@pytest.fixture
+def model_cache(tmp_path):
+    """Tiny synthetic files for provisioning tests; never real model weights."""
+    manifest = load_model_manifest()
+    source = tmp_path / "snapshot"
+    blobs = tmp_path / "blobs"
+    blobs.mkdir()
+    for index, entry in enumerate(manifest["files"]):
+        raw = f"test-only model file {index}\n".encode()
+        blob = blobs / str(index)
+        blob.write_bytes(raw)
+        target = source / entry["path"]
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.symlink_to(blob)
+        entry.update(bytes=len(raw), sha256=hashlib.sha256(raw).hexdigest())
+    manifest_path = tmp_path / "model-manifest.json"
+    manifest_path.write_text(json.dumps(manifest))
+    return source, tmp_path / "prepared", manifest_path
