@@ -9,8 +9,13 @@ implemented and verified: 113 tests passed, including offline six-runbook
 retrieval. The earlier owner-run 77-test embedding result remains below.
 Checkpoint 3A's read-only PostgreSQL evidence reader is implemented and verified
 independently of retrieval/generation; see the evidence-reader section below.
-Generation, the endpoint and button do not exist yet. Concrete API fields,
-error codes and configuration defaults remain the design for a later increment.
+Checkpoint 3B's report composition, validation and local Ollama HTTP adapter are
+implemented and tested with fake providers. Approved initial budgets and a
+fail-closed relevance gate are implemented. Policy 2 passes all 13 development
+cases, but its single held-out run passed 11 and failed two; automatic generation
+remains disabled. Actual Qwen investigation
+reports remain unverified. The endpoint and
+button do not exist yet; HTTP error mappings remain a later integration step.
 Baseline: `main` / `feat/ai-investigation` at `2b919b7`, after alerts PR #3.
 
 This contract replaces the older external retrieval-only drafts as the proposed
@@ -551,6 +556,150 @@ Official references: [MiniLM](https://huggingface.co/sentence-transformers/all-M
 
 ## Proposed API and report contract
 
+### Checkpoint 3B implementation scope
+
+#### Approved continuation: local verification and relevance gating
+
+The owner reports Ollama 0.40.18 and the pinned Qwen3 model installed, with two
+successful simple responses (approximately 12.19 seconds cold and 0.67 seconds
+warm). Local metadata also matches the runtime/model pin. These are response
+smokes, not evidence-backed reports or grounding measurements.
+
+The owner approved initial `GenerationLimits`: 16,384 context tokens, 2,048
+output tokens, 12,000 serialized UTF-8 prompt bytes and 90 seconds. Retain the
+2,048-token framing reserve, temperature zero, one admitted investigation and
+up to three retrieved candidates. An oversized snapshot fails explicitly;
+do not remove readings or documents silently to satisfy the byte guard.
+
+Prepare a small versioned evaluation file outside the six-document manifest.
+Declare source-derived development and held-out questions/allowed document IDs
+before measuring scores. Document-ID labels check candidate guidance selection;
+they do not prove chunk-level entailment, hardware diagnoses or owner approval.
+Select the highest development-only threshold that retains at least one labeled
+document for every supported question while accepting no mislabeled candidates.
+Freeze that threshold before scoring held-out questions. Require supported
+coverage and zero unsupported/wrong-document acceptances on both splits; any
+failure disables automatic selection. Do not retune using held-out failures.
+Bind the immutable in-memory gate to the index, evaluation hash and query
+version; rebuilding/changing those inputs requires re-evaluation. No new durable
+store or relevance artifact is required. A disabled gate or no qualifying chunks
+returns no guidance, preserving `insufficient_evidence` without calling Ollama.
+
+Relevance-blocker correction: topical similarity is not answerability. The
+development question asking for an automatic firmware-repair command retrieves
+the runbook's explicit limitation that firmware-update workflows are absent.
+Keep that question unsupported and keep every label unchanged. Enforce the
+already approved read-only scope before cosine acceptance: reject explicit
+requests for a command/script to repair, fix, reset/restart, replace, flash/update
+or clear/delete resources. Match request forms (for example “what command”,
+“give me a script”, “how can I …”), a command/script term, and a mutating action;
+do not reject read-only questions merely because they mention firmware or resets.
+This narrow guard is not a general intent classifier or proof of answerability.
+Version it as gate policy 2, retaining query version 1 because the generated
+retrieval query is unchanged. Apply exactly the same guard during development,
+held-out evaluation and runtime selection. Keep the development-only threshold
+method and zero-false-acceptance criteria unchanged. Freeze this rule before one
+held-out scoring run; a failure keeps the entire gate disabled.
+
+Policy 2 was frozen with the unchanged dataset/index and cutoff
+`0.48011912149223085` before the one held-out run. Development now passes **13/13**;
+held-out passes **11/13**. The correct error-count source is below the cutoff
+for one paraphrase; another case accepts an extra thermal document not allowed
+by its label. That document also discusses lifecycle boundaries, so its label
+needs owner review rather than silent expansion. No threshold, labels, corpus
+or policy were changed after held-out scoring. Automatic generation remains
+disabled and no qualifying guidance reaches Ollama. See
+[the detailed results](ai-generation.md#relevance-blocker-diagnosis).
+
+The owner additionally authorized a separate development-only generation smoke
+with explicitly reviewed manual excerpts. See [its isolation and review contract](ai-manual-smoke.md).
+This is not an exception in automatic selection: its failing gate, cutoff and
+labels stay unchanged. Use a standalone development entry point, synthetic
+PostgreSQL packet and two pinned source chunks, with conspicuous local report
+labeling. Database preparation and host-Ollama generation run in separate
+containers/networks; no production-facing manual override is introduced.
+
+Local test/demo summaries use a strict schema: pass/fail, bounded integer
+counts, finite nonnegative timings and closed error-category enums only. Suppress
+child stdout/stderr, exception messages, test IDs, paths, database records,
+credentials, prompts and generated reports. Validate the summary before printing;
+test malicious strings/extra fields and failures with canary secrets. Describe
+the validation performed, not a blanket guarantee that arbitrary output is
+secret-free. Full reports are written locally only with an explicit option.
+
+Prepare an opt-in terminal workflow using a fresh tmpfs PostgreSQL container,
+the existing migrations and persistence/evaluation code, and two synthetic
+readings for one WARNING episode. Never seed persistent development resources.
+Read the resulting alert through the existing evidence reader, close PostgreSQL
+resources, then retrieve and preflight prompt size. Generation requires an
+explicit flag and a validated gate. Missing combined Python dependencies or
+Docker-to-host Ollama connectivity are blockers, not permission to install,
+change host binding or bypass the gate. This increment prepares the real report
+command; it does not authorize automatic real-report generation during tests.
+
+Checkpoint 3A was verified committed/pushed at `798621d` with a clean working tree
+before 3B. At that historical preflight no local Ollama/model was available;
+the owner subsequently installed them as recorded above. See
+[manual generation setup](ai-generation.md). No API/UI or Git work is authorized
+in this increment.
+
+Report validation and a local-only Ollama HTTP adapter use the existing
+Pydantic dependency and Python standard library. Preserve the report shape below;
+only the four `report` fields are model-authored. The server owns all alert,
+telemetry/document sources, identifiers, status and provenance. Reject malformed
+JSON, duplicate keys, extra fields, blank statements, missing/unknown/duplicate
+references, unlabeled hypotheses, model-authored source objects and incomplete
+or output-truncated provider responses. Require observations to cite alert or
+telemetry evidence and suggested guidance/hypotheses to cite supplied documents.
+Citation/schema validation is not proof of semantic entailment: simulation-aware
+prompting and actual model-output review remain necessary for unsupported claims.
+
+The HTTP client targets only explicitly configured local Ollama hosts, bypasses
+proxy environment variables and never follows redirects, pulls models, retries,
+uses cloud models or substitutes a model. Verify runtime version and the chosen
+tag's expected full digest before generation. Use `/api/chat`, `stream: false`,
+JSON-schema `format`, and temperature zero. Bound response bytes and enforce the
+approved 90-second generation deadline with socket cancellation and cleanup.
+Serialize one synchronous generation at a time and retain admission until the
+underlying client request has ended. Log no prompts or raw model responses.
+
+The owner approved the initial defaults and evaluation approach above. Candidate
+retrieval alone does not authorize guidance selection; a validated gate is
+required. The initial development failure is corrected, but held-out validation
+failed; automatic generation remains disabled. Do not weaken the rule or tune
+on held-out failures to enable a demo.
+The existing insufficient-evidence and failure contracts below remain unchanged.
+The composition adapter requires an explicit `select_guidance` callback and
+`GenerationLimits`, whose default fields now use the approved budgets. The
+callback can select only from the captured index's candidates.
+An empty selection returns `insufficient_evidence` without any provider request.
+The client also checks `/api/show` context capacity/quantization before generation.
+An optional standalone investigation Dockerfile may combine the two existing
+hash locks for the owner to build manually. It adds no dependency versions and
+does not change the consumer, backend or retrieval images. Its build and native
+Ollama connectivity for that combined image remain unverified. The staged manual
+smoke's cached-image bridge metadata probe passed; its internal-network probe
+failed. Successful evidence-backed generation remains unverified after the
+owner's first failed attempt. See the [pause handoff](ai-investigation-handoff.md).
+
+November 27 verification: **59 new report/provider tests passed**, including
+in-process fake HTTP responses without model assets. The existing isolated
+backend script passed **322 unit tests, 5 skipped, 46 deselected** and **27
+PostgreSQL integration tests**. The unchanged optional AI suite passed **113
+tests with zero failures/skips**. Ruff and dependency consistency passed. These
+results do not verify real Qwen generation, factual grounding or performance;
+see the [verification record](testing-strategy.md#checkpoint-3b-reportprovider-verification-plan).
+
+The subsequent continuation passed **374 backend unit tests (7 optional skips)**,
+**28 PostgreSQL integration tests**, and **137 optional AI tests (zero skips)**.
+The real-model development evaluation passed **12 of 13 cases**, failed one and
+left **13 held-out cases unscored**. There is no validated threshold to enable.
+The candidate-size-only check of a two-reading PostgreSQL snapshot fits the
+approved 12,000-byte prompt limit; no LLM or relevance approval is implied.
+The terminal demo currently reports `missing_runtime` because the combined
+Python image is absent. No evidence-backed report or host connectivity result
+is claimed. Earlier verification records above remain historical results.
+
 `POST /api/v1/alerts/{alert_id}/investigation`, UUID path parameter, no request
 body. Clients cannot supply SQL, evidence, source paths, prompts or model names.
 No streaming or report-history endpoint is introduced. Existing local access
@@ -633,8 +782,10 @@ HTTP call. Use a separate investigation fetch timeout derived from that setting
 with 15 seconds of transport/preparation headroom; ordinary eight-second reads
 and acknowledgement remain unchanged. Bound encoder inputs, prompt size and
 output length separately; verify the selected evidence fits the configured LLM
-context without silent truncation. Initial context/output budgets are runtime
-tuning items, not measured guarantees.
+context without silent truncation. The approved initial budgets are 16,384
+context tokens, 2,048 output tokens and 12,000 serialized prompt bytes with a
+2,048-token framing reserve. They are initial limits, not a guarantee that every
+five-minute snapshot fits. The small two-reading demo has a passing size check.
 
 Release database resources before waiting on the model. Hold admission while the
 actual underlying request is active; do not release it just because a browser
@@ -652,8 +803,10 @@ automatically when acknowledgement changes.
 ## Acceptance criteria and next increment
 
 These are acceptance gates for the complete feature. Completed document-preparation,
-local-retrieval and PostgreSQL-evidence test results are recorded above. Relevance
-calibration, generation/API, browser and full LLM demo verification remain pending.
+local-retrieval, PostgreSQL-evidence and fake-provider report tests are recorded
+above. Relevance policy 2 passes development but fails its held-out validation;
+real investigation generation, API/browser integration and the full LLM demo
+remain pending.
 
 | Area | Required evidence |
 | --- | --- |
@@ -669,12 +822,16 @@ calibration, generation/API, browser and full LLM demo verification remain pendi
 
 Checkpoints 2A/2B supply verified document preparation, local embeddings and
 candidate retrieval under `processing/device_health_investigation/`. Checkpoint
-3A now implements the approved read-only PostgreSQL evidence reader; generation,
-API and the inline dashboard interaction follow later. No job system or broader
-persistence layer is required.
+3A implements the approved read-only PostgreSQL evidence reader. Checkpoint 3B
+adds report composition, validation and a pinned local HTTP client, verified with
+fake providers. API and inline dashboard integration follow later. No job system
+or broader persistence layer is required.
 
-Remaining validation items include evidence/retrieval/report composition, Ollama
-connectivity, Qwen digest and context/latency/memory behavior, and corpus relevance
-calibration. A model substitution or material contract change returns to owner
-review. README commands and verification results are added only after they exist;
-3A authorizes no Ollama/model installs, API/UI work or Git writes.
+Remaining validation items include real evidence/retrieval/Qwen composition,
+Docker-to-host Ollama connectivity, full-report context/latency/memory behavior,
+output grounding and corpus relevance validation. Native simple-response timing
+is owner-reported, and local version/digest metadata matches the pins. The optional
+combined image has not been built. Relevance improvements require a reviewed plan;
+keep the failed gate disabled. A model substitution or material contract change
+returns to owner review. Checkpoint 3B authorizes no agent software/model installs,
+API/UI work or Git writes.

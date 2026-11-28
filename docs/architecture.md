@@ -11,8 +11,13 @@ AI-assisted incident investigation now has implemented document validation,
 local MiniLM embeddings, a rebuildable JSON index and an offline candidate-search
 CLI. Read-only PostgreSQL alert evidence capture is implemented independently,
 using one repeatable-read snapshot and closing database resources before model
-work. Generation, evidence/retrieval/report composition, the endpoint and UI
-remain unimplemented. See [the design](ai-investigation-design.md) and
+work. Report composition, source/schema validation and the local Ollama HTTP
+adapter are implemented and verified with fake providers. Approved initial
+budgets and a fail-closed relevance gate are implemented. Development passes
+13/13, but held-out evaluation passes 11/13, leaving automatic generation disabled.
+Real evidence-backed
+Qwen reports remain unverified; the endpoint
+and UI remain unimplemented. See [the design](ai-investigation-design.md) and
 [ADR-008](adr/ADR-008-local-ai-investigation.md).
 
 This document records logical responsibilities and system contracts. A logical component does not have to be an independently deployed service in the MVP. Details marked TBD are deferred to detailed component design or implementation unless they become an architectural dependency.

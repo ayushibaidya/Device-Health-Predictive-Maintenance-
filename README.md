@@ -77,7 +77,21 @@ three candidates with original text and source references. It uses no database
 or LLM. Similarity scores are uncalibrated; the runbooks remain pending owner
 review. See the [offline setup](docs/ai-investigation-design.md#manual-embedding-setup-and-smoke)
 and [retrieval CLI](docs/ai-investigation-design.md#retrieval-cli-and-verification).
-Local LLM reports and the Get AI Insights button remain planned.
+Report composition and the local Ollama adapter are now implemented and verified
+with fake providers. Actual Qwen reports and the Get AI Insights button remain
+unverified/planned; see the [manual local runtime setup](docs/ai-generation.md).
+Approved 16K generation defaults and a fail-closed relevance gate are implemented.
+Development passes 13/13, but held-out evaluation passes 11/13; automatic report
+generation stays disabled.
+For aggregate-only output and disposable resources, run
+`MINILM_MODEL_DIR="$PWD/build/knowledge/models/1110a243fdf4706b3f48f1d95db1a4f5529b4d41" bash scripts/test-ai-investigation.sh`.
+The command currently exits nonzero on the relevance blocker after the test suites
+pass. See the [verification and terminal demo guide](docs/ai-generation.md#summary-only-verification-and-disposable-terminal-demo).
+An isolated [manual generation smoke](docs/ai-manual-smoke.md) is prepared for
+owner-run local testing with pinned excerpts. Automatic generation stays disabled;
+no real investigation report or application button is claimed yet.
+Checkpoint 3B is paused until after the owner's December 2 interview; see the
+[pause handoff and resume point](docs/ai-investigation-handoff.md).
 
 Read-only PostgreSQL alert evidence capture is also implemented independently:
 it selects up to 100 same-lifecycle readings in a five-minute simulation window.
@@ -96,7 +110,7 @@ commit, and pull request:
 | Basic API | Implemented: fleet/device/history and alert endpoints, health checks, interactive docs |
 | Dashboard | Implemented: fleet/device views, current values, history charts, refresh, and application states |
 | Alerts | Implemented: durable severity episodes, recovery/history, dashboard display and acknowledgement |
-| AI investigation | Document preparation, local embeddings, candidate retrieval and PostgreSQL alert evidence verified; report/API/button planned |
+| AI investigation | Document preparation, local embeddings, candidate retrieval and PostgreSQL evidence verified; report adapter fake-tested; real Qwen reports/API/button pending |
 | ML baseline | Planned (not implemented): predictive failure probability and an anomaly signal in the UI |
 | Hosted release | Planned (not deployed): public URL, deployment health checks, and automatically seeded demo data |
 

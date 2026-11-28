@@ -2,8 +2,10 @@
 
 Status: architecture accepted November 26, 2026 through explicit owner approval.
 Document preparation, local candidate retrieval and read-only PostgreSQL evidence
-capture are implemented on the feature branch. Report composition, generation
-and API/UI integration remain pending; the approved
+capture are implemented on the feature branch. Report composition and the local
+generation adapter are verified with fake providers. Initial budgets are approved;
+held-out validation is 11/13, leaving automatic generation disabled.
+Real investigation reports and API/UI integration remain pending. The approved
 [design](../ai-investigation-design.md) records the contracts and verification.
 
 ## Context

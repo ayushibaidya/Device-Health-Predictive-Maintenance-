@@ -464,3 +464,201 @@ the full five-minute interval and cleanup. The existing Starlette/httpx warning
 remains nonfatal. Fresh tmpfs test resources were used; no development data,
 dependencies or Git history changed. The earlier 260-test result remains above
 as historical evidence.
+
+## Checkpoint 3B report/provider verification plan
+
+The approved continuation adds the 16K/2,048-output/12,000-byte/90-second defaults,
+a development-only calibrated relevance threshold and separate held-out checks.
+Freeze the labeled questions before observing scores. Test threshold selection,
+wrong-source/unsupported rejection, index/evaluation mismatch, and disabled-gate
+abstention with no provider invocation. A failed real relevance evaluation is a
+reported blocker; do not change labels or thresholds to fit held-out outcomes.
+
+Add a validated summary runner which suppresses raw test/demo child output and
+prints only pass/fail, aggregate counts, timings and fixed error categories.
+Test unknown fields, malicious strings, invalid numbers, malformed summaries,
+and canary credentials/records/prompts/reports emitted by a failing child. These
+checks validate this output path, not every dependency or arbitrary future log.
+The disposable terminal demo must enforce isolated database naming, use only
+existing migrations, close database work before model calls and fail explicitly
+on prompt overflow. Real generation is opt-in; model/runtime installation and
+network configuration changes remain outside this increment.
+
+Verify the exact two-reading demo prompt without installing a combined runtime:
+the disposable PostgreSQL integration test may export only its synthetic fixture
+to a unique temporary directory shared with the offline retrieval tests. Use real
+MiniLM candidates from the unchanged corpus for a size-only preflight, without
+accepting their relevance or calling Ollama. Delete the fixture directory with
+the test resources. No production database records enter this handoff.
+
+Start with strict report/source validation and a local-only HTTP client. Use
+fake providers and local in-process HTTP servers; never download a model during
+tests. Cover malformed/duplicate-key JSON, missing/extra fields, source-reference
+membership and citation categories, unlabeled hypotheses, altered server-owned
+sources, incomplete/truncated output, unavailable/wrong runtime or model digest,
+bounded bodies, hard deadlines and resource cleanup. Keep PostgreSQL evidence and
+the optional embedding environment unchanged. The initial preparation required
+owner review of relevance policy and prompt/context defaults; the approved
+continuation above supplies those defaults and fail-closed evaluation criteria.
+Real Qwen grounding, latency, context sizing and host connectivity remain pending
+until the owner manually provisions the selected runtime/model.
+
+November 27, 2026 implementation verification (preserving the earlier results
+above):
+
+- **59 new tests passed** across `test_investigation_reporting.py` and
+  `test_ollama_client.py`. They cover server-owned references and lifecycle
+  filtering, strict report structure, malformed/duplicate JSON, mandatory
+  guidance selection, insufficient guidance without an LLM request, prompt
+  budget rejection without dropping evidence, shared admission/release,
+  runtime/model provenance, local-only transport, bounded/truncated responses,
+  stalled/drip-fed HTTP deadlines and cleanup. Selectors/providers are explicit
+  test fakes, not a production relevance policy or actual model.
+- `scripts/test-ai-evidence.sh`: **322 passed, 5 skipped, 46 deselected** in
+  the backend unit phase; **27 passed** in fresh PostgreSQL containers, including
+  the existing alert integration cases. Ruff and dependency consistency passed.
+  The five optional tokenizer/model skips are covered by the separate runtime.
+- `scripts/test-ai-embeddings.sh`: **113 passed, zero failures/skips** with
+  the unchanged cached MiniLM assets and optional image; Ruff and dependency
+  consistency passed. No embedding/index behavior or dependencies changed.
+
+The existing Starlette/httpx TestClient deprecation warning remains nonfatal.
+All repository mounts were read-only; PostgreSQL used unique internal networks
+and tmpfs, without development volumes or host ports. No models, software or
+dependencies were installed. The optional combined Dockerfile was reviewed for
+matching shared pins (60 combined packages, no version conflicts), but not
+built; combined installation/import compatibility therefore remains unverified.
+At that initial verification, real Qwen generation, unsupported-claim/grounding
+review, relevance calibration, default budgets and connectivity remained pending.
+API/browser/full demo and Kafka interruption suites were not rerun in this
+increment. The earlier 3A/2B and full workflow results remain historical evidence.
+
+Subsequent approved continuation, November 27, 2026:
+
+- `scripts/test-ai-investigation.sh` passed **374 backend unit tests, 7 skipped**
+  in **2.318 seconds**; **28 PostgreSQL integration tests, zero skips**, in
+  **1.590 seconds**; and **137 optional AI tests, zero skips**, in **6.873 seconds**.
+  Skips concern optional model/tokenizer/synthetic-handoff provisioning in the
+  backend-only phase; the offline AI phase covers them with the explicit assets.
+- Real MiniLM relevance evaluation took **3.138 seconds**: **12 development cases
+  passed, one failed**, and **13 held-out cases remained unscored**. No threshold
+  satisfied the development acceptance gate. The script intentionally exits 1
+  with `relevance_unvalidated`; this is a relevance blocker, not a failed unit
+  test. Do not retune using held-out labels or silently accept the top three.
+- Real candidate-size preflight passed for the two-reading disposable PostgreSQL
+  fixture and all three MiniLM candidates at the approved 12,000-byte limit.
+  It supplies no relevance or generated-report/grounding claim.
+- Unit checks cover summary schema/enum/numeric validation, duplicate/malformed
+  JSON, canary child stdout/stderr, unknown exception messages/codes, CLI error
+  values, outer Docker relay validation, and consistent process exit status.
+  Disabled-gate and empty-selection cases assert zero provider calls.
+- The default terminal demo returned `missing_runtime` (exit 2) before database
+  creation because the optional combined image is absent. That full workflow,
+  real report generation, Docker-to-host connectivity and optional saved-report
+  mount remain unverified. No Ollama generation was called by this continuation.
+
+Existing runbook/model hashes and dependencies were preserved. Temporary
+synthetic-fixture handoffs, databases and networks were cleaned up; no persistent
+development data was used. The earlier 322/27/113 test records remain historical
+results; the results above are the
+final synthetic-handoff verification, not a new real-Qwen benchmark.
+
+Relevance-blocker diagnosis and correction plan: the failing development question
+asks “What command repairs the device firmware automatically?” and correctly
+expects no accepted documents. Firmware chunks score 0.6364894273640975,
+0.6040028097435218 and 0.5837521896606158, all above the development-derived
+0.48011912149223085 threshold. The threshold is limited by the supported old
+simulation-timestamp question, so raising it cannot solve the separation problem.
+
+Before implementation, document a narrow guard for explicit requests for
+remediation commands/scripts, using the existing no-remediation scope. Add
+paraphrase, read-only capability-question, runtime/evaluation consistency and
+policy-version mismatch tests. Keep all corpus/evaluation labels and held-out
+questions unchanged. Real-model regression tests must score development only;
+the separately finalized policy gets one explicit held-out run. Record failures
+without changing the threshold, labels or guard after seeing held-out results.
+
+November 27 relevance-only correction verification:
+
+- Real development evaluation: **13 passed, zero failed**, same threshold
+  **0.48011912149223085**. The unsupported firmware-command request is rejected
+  by the scope guard, with unchanged labels, documents and embeddings.
+- Regression checks before held-out scoring: **390 backend unit tests passed,
+  7 optional skips**, in **2.744 seconds**; **152 AI tests passed, 1 skip**, in
+  **6.570 seconds**. The AI skip is the PostgreSQL synthetic-fixture prompt-size
+  check, not relevant to this retrieval-only run; its earlier passing result is
+  retained above. Real relevance regressions now score development only.
+- Ruff passed. No dependency, model, database, API, frontend or ingestion changes.
+  PostgreSQL/browser/real-LLM workflows were not rerun in this correction.
+- The single explicit held-out run took **3.370 seconds**, with **11 passed,
+  2 failed, zero skipped**. One correct error-count chunk scored below the frozen
+  cutoff; another case accepted a thermal chunk outside its allowed document
+  label. Full questions, scores, locations and all outcomes are in
+  [the diagnosis](ai-generation.md#relevance-blocker-diagnosis).
+
+Policy source, dataset and index fingerprints were checked before held-out
+scoring. The finalized policy was not changed afterwards; the entire gate remains
+disabled. No held-out-driven threshold/label correction is claimed. These cases
+are now inspected evaluation evidence; a subsequent policy needs a newly frozen
+held-out set. The original 12/1 development failure and 374/28/137 regression
+record remain historical evidence above.
+
+Approved manual-smoke preparation: preserve held-out failures without rescoring
+or tuning. Review all six runbooks against the actual simulator/alerts code and
+record design-only/unverified claims without marking owner approval. The
+[manual smoke contract](ai-manual-smoke.md) requires two fixed, hash-checked
+original excerpts, a fresh disposable PostgreSQL packet and the approved prompt
+budget. Test missing confirmation, changed chunks, non-demo/mixed-run packets,
+phase-2 database credentials, schema/citation errors, and local report labeling.
+Generation is opt-in and faked in automated tests. Verify cached-container
+connectivity using metadata only; do not build images, install or generate.
+
+The standalone tool must be present only in the backend Dockerfile's test stage
+so the added tests can import it during CI. The production runtime remains
+unchanged. This is packaging for verification, not an application integration.
+
+November 27 manual-smoke verification: **413 backend unit tests passed, 9 optional
+skips**, in **2.603 seconds**; **28 disposable PostgreSQL tests passed**, in
+**1.980 seconds**; and **154 offline AI tests passed, one skip** (the separate
+synthetic-handoff-dependent check), in **8.418 seconds**. Fake tests cover the
+manual confirmation, pinned sources, no generation-phase DB configuration,
+source-reference errors, fixture boundaries/budget, development labeling and
+explicit 0600 report saving. Ruff passed.
+
+The public preparation script separately created the actual two-reading packet,
+destroyed its database/network and passed offline source/budget checks. Its prompt
+including the development notice is **7,878 / 12,000 bytes**. The public metadata
+probe passed from the same cached image used for the manual generation phase;
+an internal-network probe failed. The staged workflow preserves DB isolation
+without changing server binding. Missing manual confirmation was rejected before
+generation. The combined image was not built, dependencies/models were not
+installed, and real generation was not run. Existing held-out failures and older
+verification results remain unchanged. See [manual review and commands](ai-manual-smoke.md).
+
+First real manual generation failure (owner-reported): `ai_invalid_response`,
+66.745 seconds, no saved validated report. The aggregate cannot identify the
+original substage. Before code changes, specify fixed stage diagnostics for
+provider body/JSON/completion/token checks, report JSON/schema/references and
+model provenance. Keep every existing rejection and the original application
+error code. Focused fake-response tests must verify stage categories, unchanged
+schema/reference rejection and no raw input/message leakage. No real LLM retry,
+retrieval tuning, new dependencies or generation-parameter changes are authorized.
+
+Diagnostic-only verification passed **117 focused tests, zero failures/skips**,
+in **1.214 seconds**, with Ruff passing. Fake cases distinguish provider length,
+envelope, HTTP/body/JSON and token failures, report JSON/schema/reference failures
+and manual provenance. Canary tests reject unapproved stage values and expose no
+provider input/error text in summaries. The original rejected response was not
+retained, so its cause is unconfirmed. No real-model call or generation-setting,
+schema, reference-policy, cutoff or label change was made.
+
+Checkpoint 3B preservation verification, November 27: **422 backend tests passed,
+9 optional skips** (2.519 seconds), **28 isolated PostgreSQL tests passed, zero
+skips** (1.580 seconds), and **155 offline AI tests passed, zero skips** (8.309
+seconds). The PostgreSQL-to-AI handoff uses only a fresh synthetic fixture and is
+deleted with the temporary resources. This verifies the full uncommitted 3B scope
+including the diagnostic correction; the earlier 117-test focused result remains
+above. Ruff and dependency checks passed. No held-out cases were rescored, no
+real Qwen generation ran, and no packages/images/models were installed or built.
+See the [pause handoff](ai-investigation-handoff.md) for the unresolved 11/13 gate
+and failed real attempt; neither is reported as a passing validation.
