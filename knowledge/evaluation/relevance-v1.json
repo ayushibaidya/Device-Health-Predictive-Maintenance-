@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "query_version": 1,
+  "review_status": "source_derived_pending_owner_review",
+  "development": [
+    {"question": "How does synthetic degradation affect simulator temperature and power readings?", "relevant_document_ids": ["thermal-power"]},
+    {"question": "What do CPU and memory utilization indicate in the synthetic simulator?", "relevant_document_ids": ["cpu-memory"]},
+    {"question": "Is error_count cumulative, and how should timing jitter be reviewed?", "relevant_document_ids": ["jitter-errors"]},
+    {"question": "How are repeated WARNING states and alert severity changes handled?", "relevant_document_ids": ["alert-episodes"]},
+    {"question": "How do run identifiers distinguish resets and firmware evidence?", "relevant_document_ids": ["lifecycle-firmware"]},
+    {"question": "Does an old simulation timestamp prove the device is disconnected?", "relevant_document_ids": ["telemetry-availability"]},
+    {"question": "Synthetic simulator reported WARNING; alert ACTIVE; resolution unresolved. Review same lifecycle telemetry: temperature power CPU memory timing jitter error_count. Explain simulator state, lifecycle boundaries and telemetry coverage; no physical diagnosis.", "relevant_document_ids": ["thermal-power", "cpu-memory", "jitter-errors", "alert-episodes", "lifecycle-firmware", "telemetry-availability"]},
+    {"question": "How should I replace a lithium battery in this device?", "relevant_document_ids": []},
+    {"question": "Which exact temperature threshold proves a cooling fan has failed?", "relevant_document_ids": []},
+    {"question": "What command repairs the device firmware automatically?", "relevant_document_ids": []},
+    {"question": "Predict the probability this device will fail next week.", "relevant_document_ids": []},
+    {"question": "How do I diagnose a physical memory chip defect from this dashboard?", "relevant_document_ids": []},
+    {"question": "What is the best recipe for baking bread?", "relevant_document_ids": []}
+  ],
+  "held_out": [
+    {"question": "Can simulated temperature and power alone establish physical overheating?", "relevant_document_ids": ["thermal-power"]},
+    {"question": "How should I compare CPU load and memory measurements from one simulator run?", "relevant_document_ids": ["cpu-memory"]},
+    {"question": "Can I total successive error_count samples to estimate all errors?", "relevant_document_ids": ["jitter-errors"]},
+    {"question": "Does acknowledging a simulator alert restore device health?", "relevant_document_ids": ["alert-episodes"]},
+    {"question": "Can the next run closing an alert provide measurements for its original lifecycle?", "relevant_document_ids": ["lifecycle-firmware", "alert-episodes"]},
+    {"question": "What limits apply when a five-minute telemetry window has gaps?", "relevant_document_ids": ["telemetry-availability"]},
+    {"question": "Synthetic simulator reported CRITICAL; alert ACTIVE; resolution unresolved. Review same lifecycle telemetry: temperature power CPU memory timing jitter error_count. Explain simulator state, lifecycle boundaries and telemetry coverage; no physical diagnosis.", "relevant_document_ids": ["thermal-power", "cpu-memory", "jitter-errors", "alert-episodes", "lifecycle-firmware", "telemetry-availability"]},
+    {"question": "Which replacement power supply should I purchase for the failed device?", "relevant_document_ids": []},
+    {"question": "At what CPU percentage should the system automatically restart the machine?", "relevant_document_ids": []},
+    {"question": "What electrical voltage reading confirms battery damage?", "relevant_document_ids": []},
+    {"question": "How many operating hours remain before the physical disk breaks?", "relevant_document_ids": []},
+    {"question": "Give me a command that clears every active alert and fixes hardware errors.", "relevant_document_ids": []},
+    {"question": "Who won the football championship last season?", "relevant_document_ids": []}
+  ]
+}

@@ -22,6 +22,7 @@ COPY processing/demo.py /app/demo.py
 COPY processing/demo_data.py /app/demo_data.py
 COPY processing/demo_api.py /app/demo_api.py
 COPY processing/demo_alerts.py /app/demo_alerts.py
+COPY processing/manual_investigation_smoke.py /app/manual_investigation_smoke.py
 USER 10001:10001
 ENTRYPOINT []
 CMD ["python", "-m", "pytest", "-m", "not integration", "-q", "-o", "cache_dir=/tmp/pytest-cache"]

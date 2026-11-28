@@ -1,0 +1,12 @@
+# Optional combined dependency environment; owner builds manually. No model assets.
+FROM python:3.13.18-slim-bookworm@sha256:93498f36dc7e24ef233bfdf6cc17d4b8bd32d94ee737143e906460d5f5a914c5
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 TOKENIZERS_PARALLELISM=false \
+    HF_HUB_OFFLINE=1 HF_HUB_DISABLE_TELEMETRY=1 HF_HOME=/tmp/huggingface \
+    TORCH_HOME=/tmp/torch OMP_NUM_THREADS=2 MKL_NUM_THREADS=2
+WORKDIR /workspace/processing
+COPY processing/requirements-dev.lock processing/requirements-retrieval.lock /tmp/
+RUN python -m pip install --no-cache-dir --require-hashes --only-binary=:all: \
+    --extra-index-url https://download.pytorch.org/whl/cpu \
+    -r /tmp/requirements-dev.lock -r /tmp/requirements-retrieval.lock && python -m pip check
+USER 10001:10001
+CMD ["python", "-m", "pytest", "-m", "not integration", "-q", "-o", "cache_dir=/tmp/pytest-cache"]
